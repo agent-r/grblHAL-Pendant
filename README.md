@@ -23,12 +23,12 @@ A python script transfers machine state and position from the bCNC web server to
 **What you need (see pictures in "Pictures" folder):**
 
 - NodeMCU Esp8266 Board
-- 2.8" TFT
+- 2.8" TFT Display
 - 3x4 key pad
-- KY-040 Rotary Encoder (shortened)
-- 3d-printed case (see: "Case" folder)
+- KY-040 Rotary Encoder (I shortened the knob)
+- 3d-printed case and spinner knob (see: "MISC" folder)
 - Some screws (4pcs 2.2x6mm, 9pcs 2.2x16mm or similar)
-- Labels for keypad (.pdf)
+- Labels for keypad ("MISC" folder)
 
 - you might have to install some python or arduino libraries (see .py and .ino files)
 
