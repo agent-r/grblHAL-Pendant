@@ -1,4 +1,4 @@
-**bCNC Pendant**
+#bCNC Pendant
 
 I am using a NodeMCU (ESP8266) / Arduino to build a Pendant for bCNC [CAD/CAM/CNC-Controller](https://github.com/vlachoudis/bCNC)
 
@@ -18,6 +18,7 @@ Basic Functions:
 
 A python script transfers machine state and position from the bCNC web server to the pendant (trough USB / Serial) and commands or gcode from pendant to bCNC.
 
+![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
 
 **What you need (see pictures in "Pictures" folder):**
@@ -38,28 +39,22 @@ A python script transfers machine state and position from the bCNC web server to
 
 Solder the following connections:
 
-NodeMCU D0   >   Rotary Encoder CLK
-NodeMCU SD3  >   Rotary Encoder SW
-NodeMCU D3   >   Rotary Encoder DT
+- NodeMCU D0   >   Rotary Encoder CLK
+- NodeMCU SD3  >   Rotary Encoder SW
+- NodeMCU D3   >   Rotary Encoder DT
 
-NodeMCU A0   >   KeyPad SIG
+- NodeMCU A0   >   KeyPad SIG
 
-NodeMCU D4   >   TFT DC
-NodeMCU D5   >   TFT SCK
-NodeMCU D6   >   TFT MISO
-NodeMCU D7   >   TFT MOSI
-NodeMCU D8   >   TFT CS
-NodeMCU 3.3V >   TFT LED
-NodeMCU 3.3V >   TFT RESET ?
+- NodeMCU D4   >   TFT DC
+- NodeMCU D5   >   TFT SCK
+- NodeMCU D6   >   TFT MISO
+- NodeMCU D7   >   TFT MOSI
+- NodeMCU D8   >   TFT CS
+- NodeMCU 3.3V >   TFT LED
+- NodeMCU 3.3V >   TFT RESET ?
 
-NodeMCU GND  >   all GND
-NodeMCU 3.3V >   all VCC
-
-
-
-
-
-
+- NodeMCU GND  >   all GND
+- NodeMCU 3.3V >   all VCC
 
 
 (This Project is stillworking but still "Work in Progress")
