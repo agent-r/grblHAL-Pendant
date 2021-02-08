@@ -1,4 +1,4 @@
-#bCNC Pendant
+# bCNC Pendant
 
 I am using a NodeMCU (ESP8266) / Arduino to build a Pendant for bCNC [CAD/CAM/CNC-Controller](https://github.com/vlachoudis/bCNC)
 
@@ -31,11 +31,12 @@ A python script transfers machine state and position from the bCNC web server to
 - Some screws (4pcs 2.2x6mm, 9pcs 2.2x16mm or similar)
 - Labels for keypad ("MISC" folder)
 
+- Python 3
 - you might have to install some python or arduino libraries (see .py and .ino files)
 
 **Basic wireing:**
 
-- First: solder out all pins to save some space.
+- First: solder out pins from all modules to save some space.
 
 Solder the following connections:
 
@@ -43,7 +44,7 @@ Solder the following connections:
 - NodeMCU SD3  >   Rotary Encoder SW
 - NodeMCU D3   >   Rotary Encoder DT
 
-- NodeMCU A0   >   KeyPad SIG
+- NodeMCU A0   >   Key Pad SIG
 
 - NodeMCU D4   >   TFT DC
 - NodeMCU D5   >   TFT SCK
@@ -57,4 +58,4 @@ Solder the following connections:
 - NodeMCU 3.3V >   all VCC
 
 
-(This Project is stillworking but still "Work in Progress")
+(This Project is working but still "Work in Progress")

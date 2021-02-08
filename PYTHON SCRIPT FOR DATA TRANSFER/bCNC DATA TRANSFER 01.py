@@ -11,42 +11,12 @@ import serial
 import serial.tools.list_ports
 import json
 
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
 
 status_timer = None
 old_status = None
 
 # print(sys.version)
 ## -------------------- SETUP -------------------
-
-def os_icon():
-
-    app = QApplication([])
-    app.setQuitOnLastWindowClosed(False)
-
-    # Adding an icon
-    icon = QIcon("icon.png")
-
-    # Adding item on the menu bar
-    tray = QSystemTrayIcon()
-    tray.setIcon(icon)
-    tray.setVisible(True)
-
-    # Creating the options
-    menu = QMenu()
-    restart = QAction("Restart")
-    restart.triggered.connect(start())
-    menu.addAction(restart)
-
-    # To quit the app
-    quit = QAction("Quit")
-    quit.triggered.connect(app.quit)
-    menu.addAction(quit)
-
-    # Adding options to the System Tray
-    tray.setContextMenu(menu)
-    app.exec_()
 
 
 def connect_pendant():
@@ -109,7 +79,10 @@ def get_status():
 
 
     while ser.in_waiting:  # Or: while ser.inWaiting():
-        incoming = ser.readline().decode(errors='ignore')
+        try:
+            incoming = ser.readline().decode(errors='ignore')
+        except:
+            pass
 
         in_list = incoming.split(";")
 
@@ -148,7 +121,7 @@ def get_status():
 
 ## -------------------- LOOP -------------------
 
-def start():
+def main():
 
     while check_server() or connect_pendant():
         time.sleep(2)
@@ -156,12 +129,6 @@ def start():
     status_timer = threading.Timer(.2, get_status)
     status_timer.start()
     input() # Don't exit the program
-
-
-def main():
-
-    os_icon()
-    start()
 
 
 if __name__ == '__main__':
