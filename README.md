@@ -4,7 +4,8 @@
 
 I am using a NodeMCU (ESP8266) / Arduino to build a Pendant for bCNC [CAD/CAM/CNC-Controller](https://github.com/vlachoudis/bCNC)
 
-Basic Functions:
+
+## Basic Functions:
 
 - TFT display with machine positions and machine state.
 - 12 Keys + rotary encoder for the following functions:
@@ -23,8 +24,7 @@ A python script transfers machine state and position from the bCNC web server to
 ![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
 
-
-**What you need (see pictures in "Pictures" folder):**
+## What you need (see pictures in "Pictures" folder):
 
 - NodeMCU Esp8266 board
 - 2.8" TFT display
@@ -39,23 +39,27 @@ A python script transfers machine state and position from the bCNC web server to
 
 
 
-**Basic wireing:**
+## Basic wireing:
+
+**Preparation**
 
 - First: solder out pins from all modules to save some space.
-
 - Place rotary encoder into the top side of the case and fix by tightening input
 - Place Buttons and TFT display in the top side of the Increase
 - place NodeMCU mount behind the TFT display
 - Screw NodeMCU onto that mount (2.2x6mm screws)
 
-Solder the following connections using thin cables:
+**Soldering:**
 
+Rotary encoder:
 - NodeMCU D0   >   Rotary Encoder CLK
 - NodeMCU SD3  >   Rotary Encoder SW
 - NodeMCU D3   >   Rotary Encoder DT
 
+KeyPad:
 - NodeMCU A0   >   Key Pad SIG
 
+TFT:
 - NodeMCU D4   >   TFT DC
 - NodeMCU D5   >   TFT SCK
 - NodeMCU D6   >   TFT MISO
@@ -64,9 +68,11 @@ Solder the following connections using thin cables:
 - NodeMCU 3.3V >   TFT LED
 - NodeMCU 3.3V >   TFT RESET ?
 
+VCC & GND:
 - NodeMCU GND  >   all GND
 - NodeMCU 3.3V >   all VCC
 
+**Finishing**
 
 - Close case using the 2.2x12mm screws
 - Put knob on rotary encoder
@@ -74,7 +80,7 @@ Solder the following connections using thin cables:
 
 
 
-**How to use?**
+## How to use?
 
 - Plug in USB-pendant
 - Start bCNC
