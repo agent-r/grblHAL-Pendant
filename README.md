@@ -1,5 +1,7 @@
 # bCNC Pendant
 
+(This Project is already well working but still "work in progress")
+
 I am using a NodeMCU (ESP8266) / Arduino to build a Pendant for bCNC [CAD/CAM/CNC-Controller](https://github.com/vlachoudis/bCNC)
 
 Basic Functions:
@@ -21,24 +23,32 @@ A python script transfers machine state and position from the bCNC web server to
 ![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
 
+
 **What you need (see pictures in "Pictures" folder):**
 
-- NodeMCU Esp8266 Board
-- 2.8" TFT Display
+- NodeMCU Esp8266 board
+- 2.8" TFT display
 - 3x4 key pad
 - KY-040 Rotary Encoder (I shortened the knob)
-- 3d-printed case and spinner knob (see: "MISC" folder)
+- 3d-printed case, NodeMCU mount and spinner knob (see: "MISC" folder)
 - Some screws (4pcs 2.2x6mm, 9pcs 2.2x16mm or similar)
 - Labels for keypad ("MISC" folder)
-
+- Micro USB cable
 - Python 3
 - you might have to install some python or arduino libraries (see .py and .ino files)
+
+
 
 **Basic wireing:**
 
 - First: solder out pins from all modules to save some space.
 
-Solder the following connections:
+- Place rotary encoder into the top side of the case and fix by tightening input
+- Place Buttons and TFT display in the top side of the Increase
+- place NodeMCU mount behind the TFT display
+- Screw NodeMCU onto that mount (2.2x6mm screws)
+
+Solder the following connections using thin cables:
 
 - NodeMCU D0   >   Rotary Encoder CLK
 - NodeMCU SD3  >   Rotary Encoder SW
@@ -58,4 +68,20 @@ Solder the following connections:
 - NodeMCU 3.3V >   all VCC
 
 
-(This Project is working but still "Work in Progress")
+- Close case using the 2.2x12mm screws
+- Put knob on rotary encoder
+
+
+
+
+**How to use?**
+
+- Plug in USB-pendant
+- Start bCNC
+- Start python script (bCNC DATA TRANSFER 01.py)
+- Set your active axis by pressing one of  the "Set" buttons
+- Jog in active axis by turning rotary knob left/right
+- Set current Position as WPOS zero by pressing rotary knob
+- Go to X0, Y0 or Z0 by pressing one of the "GoTo" buttons
+- Increase/decrease joffing factor by pressing F+/F-
+- Start, stop, home or reset/unlock by pressing the buttons (some have to be confirmed by pressing rotary knob)
