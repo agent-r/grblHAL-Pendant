@@ -15,7 +15,15 @@ import json
 status_timer = None
 old_status = None
 
-# print(sys.version)
+receive_timer = None
+
+serial_timeout = 0.05
+http_timeout = 0.05
+
+send_loop_time = .25
+receive_loop_time = .05
+connect_sleep_time = 2
+
 ## -------------------- SETUP -------------------
 
 
@@ -25,7 +33,7 @@ def connect_pendant():
     for p in ports:
         if 'Silicon Labs' in str(p.manufacturer):
             print('Pendant ... OK')
-            ser = serial.Serial(p.device, 128000, timeout=0.05)
+            ser = serial.Serial(p.device, 128000, timeout=serial_timeout)
             if ser.isOpen():
                 ser.close()
             ser.open()
@@ -48,18 +56,18 @@ def check_server():
 
 ## -------------------- SERVICES -------------------
 
-def get_status():
+def send_status():
 
     global status_timer
     global old_status
 
     try:
-        status_long = requests.get('http://localhost:8080/state')
+        status_long = requests.get('http://localhost:8080/state', timeout=http_timeout)
     except:
         print("bCNC Server lost...")
         while check_server() or connect_pendant():
-            time.sleep(2)
-        status_long = requests.get('http://localhost:8080/state')
+            time.sleep(connect_sleep_time)
+        status_long = requests.get('http://localhost:8080/state', timeout=http_timeout)
 
 
     status_long_json = json.loads(status_long.text)
@@ -75,8 +83,17 @@ def get_status():
         except serial.SerialException:
             print("Pendant lost...")
             while check_server() or connect_pendant():
-                time.sleep(1)
+                time.sleep(connect_sleep_time)
 
+    status_timer = threading.Timer(send_loop_time, send_status)
+    status_timer.start()
+
+
+
+
+def receive_gcode():
+
+    global receive_timer
 
     while ser.in_waiting:  # Or: while ser.inWaiting():
         try:
@@ -93,30 +110,29 @@ def get_status():
                 try:
                     print("G: " + command_json["G"])
                     try:
-                        requests.get("http://localhost:8080/send?gcode=" + command_json["G"])
+                        requests.get("http://localhost:8080/send?gcode=" + command_json["G"], timeout=http_timeout)
                     except:
                         print("bCNC Server lost...")
                         while check_server() or connect_pendant():
-                            time.sleep(2)
+                            time.sleep(connect_sleep_time)
                 except:
                     pass
                 try:
                     print("C: " + command_json["C"])
                     try:
-                        requests.get("http://localhost:8080/send?cmd=" + command_json["C"])
+                        requests.get("http://localhost:8080/send?cmd=" + command_json["C"], timeout=http_timeout)
                     except:
                         print("bCNC Server lost...")
                         while check_server() or connect_pendant():
-                            time.sleep(2)
+                            time.sleep(connect_sleep_time)
                 except:
                     pass
             except:
                 pass
 
 
-    status_timer = threading.Timer(.2, get_status)
-    status_timer.start()
-
+    receive_timer = threading.Timer(receive_loop_time, receive_gcode)
+    receive_timer.start()
 
 
 ## -------------------- LOOP -------------------
@@ -124,10 +140,14 @@ def get_status():
 def main():
 
     while check_server() or connect_pendant():
-        time.sleep(2)
+        time.sleep(connect_sleep_time)
 
-    status_timer = threading.Timer(.2, get_status)
+    status_timer = threading.Timer(send_loop_time, send_status)
     status_timer.start()
+
+    receive_timer = threading.Timer(receive_loop_time, receive_gcode)
+    receive_timer.start()
+
     input() # Don't exit the program
 
 

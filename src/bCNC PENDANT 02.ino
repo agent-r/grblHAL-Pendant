@@ -11,15 +11,13 @@
 
 #include <ESP8266WiFi.h> // to turn off!
 
-#include <Button2.h>
-#include <REncoder.h>
+#include <SimpleRotary.h>
 #define ROTARY_PIN_CLK D0
 #define ROTARY_PIN_DT D3
 #define BUTTON_PIN 10
 #define CLICKS_PER_STEP   4   // this number depends on your rotary encoder
 
-REncoder rEncoder(ROTARY_PIN_CLK /* CLK Pin*/, ROTARY_PIN_DT /* DT Pin */, BUTTON_PIN /* SW Pin */);
-int RPos = 0;
+SimpleRotary rotary(ROTARY_PIN_CLK,ROTARY_PIN_DT,BUTTON_PIN);
 
 // ESPRotary r = ESPRotary(ROTARY_PIN_CLK, ROTARY_PIN_DT, CLICKS_PER_STEP);
 // Button2 b = Button2(BUTTON_PIN);
@@ -36,7 +34,7 @@ int currtouched = 0;
 
 #include <Ticker.h>
 void TFTUpdate();
-Ticker TFTTicker(TFTUpdate, 200);
+Ticker TFTTicker(TFTUpdate, 250);
 
 #include <SPI.h>
 #include <Adafruit_GFX.h>
@@ -46,7 +44,6 @@ Ticker TFTTicker(TFTUpdate, 200);
 #define TFT_CS D8
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 int tftRotation = 0;
-
 
 /////////////////////////////////////////////////////////////////
 
@@ -77,6 +74,8 @@ int MessageTime = 15;
 
 /////////////////////////////////////////////////////////////////
 
+#define serial_timeout 25
+
 
 //////////////////////////////////////////////////////////////////
 
@@ -85,17 +84,14 @@ void setup() {
     WiFi.mode( WIFI_OFF );
     WiFi.forceSleepBegin();
 
-    Serial.setTimeout(50); // 200 works good - less ???
+    Serial.setTimeout(serial_timeout); // 200 works good - less ???
     Serial.begin(128000);
     while (!Serial) { // needed to keep leonardo/micro from starting too fast!
-        delay(50);
+        delay(25);
     }
 
-
-    // rEncoder.setMinEncoderPosition(-1);
-    // rEncoder.setMaxEncoderPosition(1);
-    // r.setChangedHandler(rotate);
-    // b.setTapHandler(click);
+    rotary.setDebounceDelay(5);
+    rotary.setErrorDelay(160); // was 180 //          mehr als 140 !
 
     // stateTicker.start();
     TFTTicker.start();
@@ -128,38 +124,31 @@ void loop() {
 ///////////////////////// ROT ENCODER ////////////////////////////////////////
 
 void getRotary() {
-    // REncoder::Event encoderEvent = rEncoder.reState();
 
-    switch (rEncoder.reState()) {
-    case REncoder::Event::REncoder_Event_Rotate_CW:
-        if( digitalRead(ROTARY_PIN_CLK) == HIGH) {
-            if (activeAxis != 0) {
-                sendCmd("G", "G91G0" + AxisName[activeAxis] + (factor[activeFactor] * (-1 * rEncoder.getPosition())));
-                sendCmd("G", "G90");
-            }
-            else {PrintStatus("ERROR: No Axis!", ILI9341_WHITE);}
-        }
-        rEncoder.setPosition(0);
-        break;
-    case REncoder::Event::REncoder_Event_Rotate_CCW:
-        if( digitalRead(ROTARY_PIN_CLK) == HIGH) {
-            if (activeAxis != 0) {
-                sendCmd("G", "G91G0" + AxisName[activeAxis] + (factor[activeFactor] * (-1 * rEncoder.getPosition())));
-                sendCmd("G", "G90");
-            }
-            else {PrintStatus("ERROR: No Axis!", ILI9341_WHITE);}
-        }
-        rEncoder.setPosition(0);
-        break;
-    case REncoder::Event::REncoder_Event_Switch_Pushed:
+    byte pushed = rotary.push();
+
+    if (pushed == 1) {
         if (activeAxis != 0) {
             sendCmd("G", "G10L20P1" + AxisName[activeAxis] + "0");
         }
         else { PrintStatus("ERROR: No Axis!", ILI9341_WHITE); }
-        break;
-    case REncoder::Event::REncoder_Event_None:
-        break;
     }
+
+
+    int rotated = rotary.rotate();
+    if (rotated == 1) {rotated = -1;}
+    else if (rotated == 2) {rotated = 1;}
+    else {return;}
+
+    if ((activeAxis == 1)|| (activeAxis == 2)) {
+        sendCmd("G", "G91G0" + AxisName[activeAxis] + (factor[activeFactor] * rotated));
+        sendCmd("G", "G90");
+    }
+    else if (activeAxis == 3) {
+        sendCmd("G", "G91G0" + AxisName[activeAxis] + (factor[activeFactor] * rotated * -1));
+        sendCmd("G", "G90");
+    }
+    else {PrintStatus("ERROR: No Axis!", ILI9341_WHITE);}
 
 }
 
