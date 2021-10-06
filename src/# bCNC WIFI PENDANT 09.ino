@@ -33,7 +33,7 @@ bool configClick = false;
 //EEPROM
 #include <EEPROM.h>
 //  0-3      host IP
-//  4-53     SSSID
+//  4-53     SSID
 //  54-103   PASSWORD
 //  104      SLEEP TIME
 //  105-106  PROBE OFFSET
