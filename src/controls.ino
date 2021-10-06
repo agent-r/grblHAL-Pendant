@@ -42,50 +42,23 @@ void Read_Key_Btn() {
         keypad_current2 = keypad_current1;
         keypad_current1 = readButton();
         if (keypad_current1 == keypad_current2) {
-
                 if (keypad_current1 != keypad_last) {
                         SleepCounter = 0;
                         switch (keypad_current1) {
-                        case -1:
-                                break;      // no button pressed !
-                        case 0:
-                                setX();
-                                break;
-                        case 1:
-                                setY();
-                                break;
-                        case 2:
-                                setZ();
-                                break;
-                        case 3:
-                                gotoZero();
-                                break;
-                        case 4:
-                                probeZ();
-                                break;
-                        case 5:
-                                config();
-                                break;
-                        case 6:
-                                decreaseFactor();
-                                break;
-                        case 7:
-                                increaseFactor();
-                                break;
-                        case 8:
-                                homeAll();
-                                break;
-                        case 9:
-                                run();
-                                break;
-                        case 10:
-                                stop();
-                                break;
-                        case 11:
-                                reset_unlock();
-                                break;
-                        default:
-                                break;
+                        case -1: break;      // no button pressed !
+                        case 0: setX(); break;
+                        case 1: setY(); break;
+                        case 2: setZ(); break;
+                        case 3: gotoZero(); break;
+                        case 4: probeZ(); break;
+                        case 5: config(); break;
+                        case 6: decreaseFactor(); break;
+                        case 7: increaseFactor(); break;
+                        case 8: homeAll(); break;
+                        case 9: run(); break;
+                        case 10: stop(); break;
+                        case 11: reset_unlock(); break;
+                        default: break;
                         }
                 }
                 keypad_last = keypad_current1;
