@@ -27,7 +27,7 @@ void probeZ() {
         for (int i = 0; i < 50; i++) {
                 if (digitalRead(BUTTON_PIN) == LOW) {
                         sendCmd("G", "G91G38.2Z" + String(ProbeDepth) + "F" + String(ProbeSpeed));
-                        sendCmd("G", "G10L20Z" + String(ProbeOffset));
+                        sendCmd("G", "G10L20Z" + String(ProbeOffset/100.0));
                         sendCmd("G", "G0Z" + String(ProbeBackHeight) + "G90");
                         while (digitalRead(BUTTON_PIN) == LOW) {delay(50);}
                         return;

@@ -43,7 +43,7 @@ void TFTUpdate() {
                 factorchange = false;
         }
         if (statechange) {
-                if (state == "Run") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
+                if (state == "Run") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); SleepCounter = 0;}
                 else if (state == "Idle") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
                 else if (state == "Hold:0") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
                 else if (state == "Hold:1") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
@@ -62,21 +62,23 @@ void TFTUpdate() {
 void TFTSleep() {
         if (SleepCounter >= SleepTime) {
                 // Serial.println("SLEEP !");
-                detachInterrupt(digitalPinToInterrupt(ROTARY_PIN_CLK));
-                detachInterrupt(digitalPinToInterrupt(ROTARY_PIN_DT));
+                // detachInterrupt(digitalPinToInterrupt(ROTARY_PIN_CLK));
+                // detachInterrupt(digitalPinToInterrupt(ROTARY_PIN_DT));
                 analogWrite(TFT_LED, 0);
                 tft.fillRect(0,0,240,320, ILI9341_BLACK);
-                while (configClick == false) {
+                while (configClick == false && rot_clicks == 0) {
                         Config_Read_Btn();
                         delay(50);
                 }
-                configClick = false;
-                SleepCounter = 0;
-                attachInterrupt(digitalPinToInterrupt(ROTARY_PIN_CLK), rotate, CHANGE);
-                attachInterrupt(digitalPinToInterrupt(ROTARY_PIN_DT), rotate, CHANGE);
+                // attachInterrupt(digitalPinToInterrupt(ROTARY_PIN_CLK), rotate, CHANGE);
+                // attachInterrupt(digitalPinToInterrupt(ROTARY_PIN_DT), rotate, CHANGE);
                 wxchange = true; wychange = true; wzchange = true, statechange = true;
                 TFTPrepare();
                 analogWrite(TFT_LED, 255);
+                delay(200);
+                configClick = false;
+                rot_clicks = 0;
+                SleepCounter = 0;
         }
         else { SleepCounter++; }
         // Serial.println(SleepCounter);
