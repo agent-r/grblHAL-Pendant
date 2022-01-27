@@ -1,21 +1,29 @@
 # bCNC Pendant
 
-(This Project is Work in Progress)
+(This project is work in progress)
 
-I am using a WeMos Lolin32  / Arduino to build a Pendant for grblHAL
+I am using a WeMos Lolin32 to build a Pendant for grblHAL
+
+Machine state and Position are passed from the grblHAL-Plugin by the Esp01 and then WiFi-transferred to the pendant. Pendant commands are WiFi-transfered to the Esp01 and then passed to the grblHAL-Plugin.
+
+![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
 ## Basic Functions:
-
-- (https://github.com/grblHAL)
-- (https://github.com/phil-barrett/grblHAL-teensy-4.x)
-- (https://www.tindie.com/products/philba/grblhal-bob-unkit-for-teensy-41-t41u5xbb/)
-- ()
 
 - CNC pendant for up to 4 axis
 - Rotary encoder and 12 buttons
 - TFT display showing position and machine state
 - Wireless connection
-- LiPo-Battery
+- Battery powered
+- Functions:
+  - Jogging
+  - goto Axis Zero
+  - Probing Routine
+  - Homing
+  - Stop/Hold
+  - Unlock
+
+  ![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
 ## What you need:
 
@@ -31,42 +39,27 @@ I am using a WeMos Lolin32  / Arduino to build a Pendant for grblHAL
   - 12 Button KeyPad
   - Rotary encoder
   - LiPo Battery
+  - PCB Board
   
 
+## Bill of Materials (see pictures in "Pictures" folder):
 
-
-- TFT display with machine positions and machine state.
-- 12 Keys + rotary encoder for the following functions:
-  - Set active axis (XYZ)
-  - jogging in active axis
-  - set WPos zero in active axis (rotary encoder switch)
-  - GoTo (active Axis) zero
-  - Probe Routine
-  - Increase / decrease jogging Factor
-  - Home all axis
-  - Start (run)
-  - Stop
-  - Reset/Unlock machine
-
-Machine state and Position are transfered via WIFI from the bCNC web server to the pendant and commands or gcode from pendant to bCNC.
-
-![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
-
-
-## What you need (see pictures in "Pictures" folder):
-
-- NodeMCU Esp8266 board
+- Esp01 Module
+- WeMos Lolin32 Module
 - 2.8" TFT display
 - 3x4 key pad
-- KY-040 Rotary Encoder (I shortened the knob)
+- Rotary Encoder
+
 - Toggle Switch MTS-203-A1 (or similar)
-- 9V Battery Connector
+
+- LiPo Battery
+
 - 3d-printed case, NodeMCU mount and spinner knob (see: "MISC" folder)
 - Some screws (4pcs 2.2x6mm, 9pcs 2.2x16mm or similar)
 - Labels for keypad ("MISC" folder)
-- Micro USB cable
-- you might have to install some arduino libraries (see .ino files)
+- Micro USB cable for charging
 
+- you might have to install some arduino libraries (see .ino files)
 
 
 ## Basic wireing:
