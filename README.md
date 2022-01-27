@@ -1,11 +1,39 @@
 # bCNC Pendant
 
-This Project is already well working
+(This Project is Work in Progress)
 
-I am using a NodeMCU (ESP8266) / Arduino to build a Pendant for [bCNC CAD/CAM/CNC-Controller](https://github.com/vlachoudis/bCNC)
-
+I am using a WeMos Lolin32  / Arduino to build a Pendant for grblHAL
 
 ## Basic Functions:
+
+- (https://github.com/grblHAL)
+- (https://github.com/phil-barrett/grblHAL-teensy-4.x)
+- (https://www.tindie.com/products/philba/grblhal-bob-unkit-for-teensy-41-t41u5xbb/)
+- ()
+
+- CNC pendant for up to 4 axis
+- Rotary encoder and 12 buttons
+- TFT display showing position and machine state
+- Wireless connection
+- LiPo-Battery
+
+## What you need:
+
+- grblHAL breakout board + Firmware:
+  - (https://github.com/grblHAL)
+  - (https://github.com/phil-barrett/grblHAL-teensy-4.x)
+  - (https://www.tindie.com/products/philba/grblhal-bob-unkit-for-teensy-41-t41u5xbb/)
+- WiFi-Plugin for grblHAL
+- Esp01 (as WiFi AccessPoint for grblHAL) + Firmware
+- Pendant + Firmware
+  - WeMos Lolin32
+  - TFT Display
+  - 12 Button KeyPad
+  - Rotary encoder
+  - LiPo Battery
+  
+
+
 
 - TFT display with machine positions and machine state.
 - 12 Keys + rotary encoder for the following functions:
