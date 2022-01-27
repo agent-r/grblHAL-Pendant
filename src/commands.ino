@@ -16,9 +16,13 @@ void setZ() {
         activeAxis = 3;
         axischange = true;
 }
+void setA() {
+        activeAxis = 4;
+        axischange = true;
+}
 void gotoZero() {
-        if ((activeAxis >= 1) && (activeAxis <= 3)) {
-                sendCmd("G", "G0" + AxisName[activeAxis] + "0");
+        if ((activeAxis >= 1) && (activeAxis <= 4)) {
+                sendCmd("gcode", "$J=G90" + AxisName[activeAxis] + "0F" + JogSpeed[activeAxis], "GOTO " + AxisName[activeAxis] + "0");
         }
         else { TFTPrint(MessageField, "No Axis selected !", TFT_COLOR_MSG_NRM); }
 }
@@ -26,9 +30,11 @@ void probeZ() {
         TFTPrint(MessageField, "Confirm Z PROBE ?", TFT_COLOR_MSG_ERR);
         for (int i = 0; i < 50; i++) {
                 if (digitalRead(BUTTON_PIN) == LOW) {
-                        sendCmd("G", "G91G38.2Z" + String(ProbeDepth) + "F" + String(ProbeSpeed));
-                        sendCmd("G", "G10L20Z" + String(ProbeOffset/100.0));
-                        sendCmd("G", "G0Z" + String(ProbeBackHeight) + "G90");
+                        sendCmd("gcode", "G91", "");
+                        sendCmd("gcode", "G38.2Z" + String(ProbeDepth) + "F" + String(ProbeSpeed), "");
+                        sendCmd("gcode", "G10L20Z" + String(ProbeOffset/100.0), "");
+                        sendCmd("gcode", "G0Z" + String(ProbeBackHeight), "");
+                        sendCmd("gcode", "G90", "PROBE");
                         while (digitalRead(BUTTON_PIN) == LOW) {delay(50);}
                         return;
                 }
@@ -36,22 +42,13 @@ void probeZ() {
         }
         TFTPrint(MessageField, "", TFT_COLOR_MSG_NRM);
 }
-/*
-   void homeX() {
-        sendCmd("G", "G0X0");
-   }
-   void homeY() {
-        sendCmd("G", "G0Y0");
-   }
-   void homeZ() {
-        sendCmd("G", "G0Z0");
-   }
- */
+
+
 void homeAll() {
         TFTPrint(MessageField, "Confirm HOME ?", TFT_COLOR_MSG_ERR);
         for (int i = 0; i < 50; i++) {
                 if (digitalRead(BUTTON_PIN) == LOW) {
-                        sendCmd("C", "HOME");
+                        sendCmd("gcode", "$H", "HOME ALL");
                         while (digitalRead(BUTTON_PIN) == LOW) {delay(50);}
                         return;
                 }
@@ -59,12 +56,13 @@ void homeAll() {
         }
         TFTPrint(MessageField, "", TFT_COLOR_MSG_NRM);
 }
+
 void stop() {
-        sendCmd("C", "STOP");
+        sendCmd("cmd", "STOP", "STOP");
 }
-void reset_unlock() {
-        sendCmd("C", "RESET");
-        sendCmd("C", "UNLOCK");
+
+void unlock() {
+        sendCmd("cmd", "UNLOCK", "UNLOCK");
 }
 void increaseFactor(){
         if (activeFactor >= 4) {activeFactor = 4;}
@@ -76,11 +74,12 @@ void decreaseFactor(){
         else {activeFactor--;}
         factorchange = true;
 }
+
 void run() {
         TFTPrint(MessageField, "Confirm RUN ?", TFT_COLOR_MSG_ERR);
         for (int i = 0; i < 50; i++) {
                 if (digitalRead(BUTTON_PIN) == LOW) {
-                        sendCmd("C", "RUN");
+                        sendCmd("cmd", "START", "START");
                         while (digitalRead(BUTTON_PIN) == LOW) {delay(50);}
                         return;
                 }
