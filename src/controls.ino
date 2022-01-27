@@ -21,8 +21,6 @@
 
 void SendUpdate() {
 
-        // Serial.println("alive");
-
         if (rotaryEncoder.encoderChanged()) {
 
                 if ((activeAxis == 1) || (activeAxis == 2)) {

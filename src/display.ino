@@ -101,6 +101,16 @@ void TFTSleep() {
 }
 
 
+void BatteryCheck() {
+
+        int batteryValue = analogRead(BATTERY_PIN);
+        float batteryVoltage = (batteryValue * 1.6113) / 1000;
+        String batteryMessage = "Battery: " + String(batteryVoltage) + "V";
+        TFTPrint(MessageField, batteryMessage, TFT_COLOR_MSG_NRM);
+
+}
+
+
 
 void TFTPrint(byte Aim, String Content, int Color) {
 
@@ -112,7 +122,7 @@ void TFTPrint(byte Aim, String Content, int Color) {
         tft.setCursor(Fields[Aim][0]+7, Fields[Aim][1]+6); // was 7/7
         tft.print(Content);
 
-        if (Aim == 5) { MessageCounter = 0; }
+        if (Aim == MessageField) { MessageCounter = 0; }
 
 }
 

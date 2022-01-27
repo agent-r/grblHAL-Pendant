@@ -44,28 +44,27 @@ bool configClick = false;
 //  114-115  PORT
 //  116-123  Jog Speed
 
-// ROTARY & BUTTON PINS
-// #define ROTARY_PIN_CLK 36
-// #define ROTARY_PIN_DT 39
-#define BUTTON_PIN 32       // rotary encoder button
-#define KEYPAD_PIN 33       // ONLY ADC1-PINS !!!
-
 // ROTARY ENCODER
-// #include <Rotary.h>
-// Rotary rotary = Rotary(ROTARY_PIN_CLK, ROTARY_PIN_DT);
-volatile int rot_clicks = 0;
-
 #include "AiEsp32RotaryEncoder.h"
-#include "Arduino.h"
+// #include "Arduino.h"
 #define ROTARY_ENCODER_A_PIN 36
 #define ROTARY_ENCODER_B_PIN 39
 #define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
 #define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
 #define ROTARY_ENCODER_STEPS 4
+
+volatile int rot_clicks = 0;
 AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
 void IRAM_ATTR readEncoderISR() {
         rotaryEncoder.readEncoder_ISR();
 }
+
+// KEYPAD
+#define BUTTON_PIN 32       // NOT USED !!! SHOULD BE DELETED
+#define KEYPAD_PIN 33       // ONLY ADC1-PINS !!!
+
+// BATTERY CHECK
+#define BATTERY_PIN 34
 
 // JSONs
 #include <ArduinoJson.h>
@@ -90,6 +89,9 @@ TickTwo SENDTicker(SendUpdate, (1000 / SEND_FPS));
 #define DEBOUNCE_FPS 50              // Debounce for Buttons
 void Read_Key_Btn();
 TickTwo DEBOUNCETicker(Read_Key_Btn, (1000 / DEBOUNCE_FPS));
+#define BATTERYCHECK 10    // Seconds
+void BatteryCheck();
+TickTwo BatteryTicker(BatteryCheck, (1000 * BATTERYCHECK));
 
 // TFT
 #include <SPI.h>
@@ -172,6 +174,7 @@ int JogSpeed[5] = {0, 2000, 2000, 1000, 1000};
 String LastSentCommand = "";
 byte MessageCounter = 0;
 
+
 // TODO: CHANGE THIS BEHAVIOUR !!!
 #define MessageTime  6 * TFT_FPS    // seconds (How many Frames of TFT Update)
 
@@ -194,6 +197,7 @@ void setup() {
         // pinMode(ROTARY_PIN_DT, INPUT_PULLUP);
         pinMode(BUTTON_PIN, INPUT_PULLUP);
         pinMode(KEYPAD_PIN, INPUT);
+        pinMode(BATTERY_PIN, INPUT);
         pinMode(TFT_LED, OUTPUT);
         // digitalWrite(TFT_LED, HIGH);
         analogWrite(TFT_LED, TFT_BRIGHTNESS); // TURN LIGHT ON
@@ -292,7 +296,8 @@ void setup() {
         TFTTicker.start();
         DEBOUNCETicker.start();
         SENDTicker.start();
-        if (SleepTime != 0) { TFTSleepTicker.start(); }
+        BatteryTicker.start();
+        if (SleepTime != 0) { TFTSleepTicker.start(); }     // THIS IS A BUG!! Should also start after Config-Change of Sleep Value !!!
 
 }
 
@@ -303,4 +308,5 @@ void loop() {
         TFTSleepTicker.update();
         SENDTicker.update();
         DEBOUNCETicker.update();
+        BatteryTicker.update();
 }
