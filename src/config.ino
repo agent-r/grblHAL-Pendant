@@ -226,38 +226,79 @@ void configAPPort() {
         EepromWriteInt(APPort, EEAPPort);
 }
 
-/*
-   void btAdvertisedDeviceFound(BTAdvertisedDevice* pDevice) {
-        Serial.println("Found a device asynchronously: " + pDevice->toString());
-        // Serial.println("Adress: " + String(pDevice.getAddress()));
-   }
- */
+
 void configBluetoothHost() {
-
-        // ASYNC
-        /*
-           Serial.print("Starting Async discover...");
-           if (btSerial.discoverAsync(btAdvertisedDeviceFound)) {
-                delay(10000);
-                btSerial.discoverAsyncStop();
-                Serial.println("stopped");
-           } else {
-                Serial.println("Error on discoverAsync f.e. not workin after a \"connect\"");
-           }
-         */
-        // SYNC
-        Serial.println("Starting Sync discover...");
-        BTScanResults *pResults = btSerial.discover(10000);
-        if (pResults) {
-                pResults->dump(&Serial);
+        for (int i = 0; i < 6; i++) {
+                BluetoothHost[i] = EEPROM.read(EEBluetoothHost + i);
         }
-        else {
-                Serial.println("Error on BT Scan, no result!");
+        byte activeByte = 0;
+
+        TFTConfigPrepare();
+        TFTConfigPrint(0, "Bluetooth Addr,", TFT_COLOR_CNF_STD);
+        TFTSetFontSize(2);
+        tft.setCursor(ConfigFields[2][0]+7, ConfigFields[2][1]+4);
+
+        for (int i = 0; i < activeByte; i++) {
+                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
+                tft.print(BluetoothHost[i], HEX); tft.print(":");
+        }
+        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
+        tft.print(BluetoothHost[activeByte], HEX);
+        for (int i = (activeByte + 1); i < 6; i++) {
+                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
+                tft.print(":"); tft.print(BluetoothHost[i], HEX);
         }
 
+        while (true) {
+                delay(20);
+                if (checkEnter()) {
+                        activeByte++;
 
+                        if (activeByte >= 6) {
+                                Serial.print("Bluetooth Host: ");
+                                for (int i = 0; i < 6; i++) {
+                                        EEPROM.write(EEBluetoothHost + i, BluetoothHost[i]);
+                                        Serial.print(BluetoothHost[i], HEX); Serial.print(":");
+                                }
+                                EEPROM.commit();
+                                Serial.println();
+                                return;
+                        }
 
+                        tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
+                        tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
+                        for (int i = 0; i < activeByte; i++) {
+                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
+                                tft.print(BluetoothHost[i], HEX); tft.print(":");
+                        }
+                        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
+                        tft.print(BluetoothHost[activeByte], HEX);
+                        for (int i = (activeByte + 1); i < 6; i++) {
+                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
+                                tft.print(":"); tft.print(BluetoothHost[i], HEX);
+                        }
+                }
 
+                if (rotaryEncoder.encoderChanged()) {
+                        BluetoothHost[activeByte] = BluetoothHost[activeByte] + rotaryEncoder.readEncoder();
+                        rotaryEncoder.reset();
+                        tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
+                        tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
+
+                        for (int i = 0; i < activeByte; i++) {
+                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
+                                tft.print(BluetoothHost[i], HEX); tft.print(":");
+                        }
+
+                        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
+                        tft.print(BluetoothHost[activeByte], HEX);
+
+                        for (int i = (activeByte + 1); i < 6; i++) {
+                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
+                                tft.print(":"); tft.print(BluetoothHost[i], HEX);
+                        }
+                }
+        }
 }
 
 void configBluetoothPin() {

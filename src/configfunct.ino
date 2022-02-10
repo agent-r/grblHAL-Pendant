@@ -262,7 +262,6 @@ IPAddress TFTConfigIP (const String Title, IPAddress newIP) {
                 if (rotaryEncoder.encoderChanged()) {
                         newIP[activeByte] = newIP[activeByte] + rotaryEncoder.readEncoder();
                         rotaryEncoder.reset();
-                        WifiHost[0] = newIP[0];  WifiHost[1] = newIP[1]; WifiHost[2] = newIP[2]; WifiHost[3] = newIP[3];
                         tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
                         tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
 
