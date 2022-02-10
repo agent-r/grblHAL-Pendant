@@ -3,8 +3,6 @@
 ///////////////////////      CONFIG      //////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-
-
 const int ConfigForms[2][5] = {
         {10, 15, 220, 35, 3},  // Field Heading
         {10, 60, 220, 250, 2}  // Field Content
@@ -25,70 +23,142 @@ const int ConfigFields[12][5] = {
 };
 
 
-
-
 void config() {
-        WiFi.disconnect();
- #define MainContentNum 8
-        String MainContent[MainContentNum] = {
+        const byte ContentNum = 9;
+        const String Content[ContentNum] = {
                 "Config",
-                "WiFi",
+                "Connection",
                 "Jogging",
                 "Probe",
                 "Sleep Mode",
                 "Brightness",
+                "Battery",
                 "Info",
                 "Exit"
         };
         while(true) {
-                switch (TFTConfigMenu(MainContent, MainContentNum)) {
-                case 1: configWIFI(); break;
+                switch (TFTConfigMenu(Content, ContentNum)) {
+                case 1: configConnection(); break;
                 case 2: configJogging(); break;
                 case 3: configProbe(); break;
                 case 4: configSleep(); break;
                 case 5: configBrightness(); break;
-                case 6: configInfo(); break;
-                case 7: TFTPrepare(); return;
-                default: TFTPrepare(); return;
+                case 6: configBattery(); break;
+                case 7: configInfo(); break;
+                case 8: TFTPrepare(); ConnectionSetup(); return;
                 }
         }
 }
 
-void configWIFI() {
- #define WifiContentNum 7
-        String WifiContent[WifiContentNum] = {
-                "WiFi",
-                "SSID",
-                "Password",
-                "IP",
-                "Port",
-                "Access Point",
+void configConnection() {
+        const byte ContentNum = 4;
+        const String Content[ContentNum] = {
+                "Connection",
+                "Connection Mode",
+                "Connection Settings",
                 "Back"
         };
         while(true) {
-                switch (TFTConfigMenu(WifiContent, WifiContentNum)) {
-                case 1: configSSID(); break;
-                case 2: configPW(); break;
-                case 3: configIP(); break;
-                case 4: configPort(); break;
-                case 5: configAP(); break;
-                case 6: return;
-                default: return;
+                switch (TFTConfigMenu(Content, ContentNum)) {
+                case 1: configConnectionMode(); break;
+                case 2: configConnectionSettings(); break;
+                case 3: return;
                 }
         }
 }
 
-void configSSID() {
+void configConnectionMode() {
+        const byte ContentNum = 5;
+        String Content[ContentNum] = {
+                "Connect Mode",
+                "WIFI Slave",
+                "WIFI AP",
+                "BLUETOOTH Slave",
+                "Back"
+        };
+        ConnectionMode = EEPROM.read(EEConnectionMode);
+        // while(true) {
+        switch (TFTConfigMenu(Content, ContentNum)) {
+        case 1: ConnectionMode = 0; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
+        case 2: ConnectionMode = 1; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
+        case 3: ConnectionMode = 2; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
+        case 4: return;
+        }
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : ConnectionMode : " + String(ConnectionMode)); }
+        EEPROM.write(EEConnectionMode, ConnectionMode); EEPROM.commit();
+        ConnectionSetup();
+        // }
+}
+
+void configConnectionSettings() {
+        const byte ContentNumWifi = 6;
+        const String ContentWifi[ContentNumWifi] = {
+                "WiFi",
+                "SSID",
+                "Password",
+                "Host IP",
+                "Host Port",
+                "Back"
+        };
+        const byte ContentNumAP = 6;
+        const String ContentAP[ContentNumAP] = {
+                "WiFi AP",
+                "SSID",
+                "Password",
+                "Host IP",
+                "Host Port",
+                "Back"
+        };
+        const byte ContentNumBluetooth = 4;
+        const String ContentBluetooth[ContentNumBluetooth] = {
+                "Bluetooth",
+                "Bluetooth Host",
+                "Bluetooth Pin",
+                "Back"
+        };
+
+        switch (ConnectionMode) {
+        case 0:
+                while(true) {
+                        switch (TFTConfigMenu(ContentWifi, ContentNumWifi)) {
+                        case 1: configWifiSSID(); break;
+                        case 2: configWifiPW(); break;
+                        case 3: configWifiHost(); break;
+                        case 4: configWifiPort(); break;
+                        case 5: return;
+                        }
+                }
+        case 1:
+                while(true) {
+                        switch (TFTConfigMenu(ContentAP, ContentNumAP)) {
+                        case 1: configAPSSID(); break;
+                        case 2: configAPPW(); break;
+                        case 3: configAPHost(); break;
+                        case 4: configAPPort(); break;
+                        case 5: return;
+                        }
+                }
+        case 2:
+                while(true) {
+                        switch (TFTConfigMenu(ContentBluetooth, ContentNumBluetooth)) {
+                        case 1: configBluetoothHost(); break;
+                        case 2: configBluetoothPin(); break;
+                        case 3: return;
+                        }
+                }
+        }
+}
+
+void configWifiSSID() {
  #define MaxSSIDs 10
         String SSIDs[MaxSSIDs+1];
         int numberOfNetworks = WiFi.scanNetworks();
         if (numberOfNetworks > MaxSSIDs) { numberOfNetworks = MaxSSIDs; }
         int Selection;
 
-        SSIDs[0] = "SSID";
+        SSIDs[0] = "Wifi SSID";
         for(int i = 1; i <= numberOfNetworks; i++) {
-                // SSIDs[i] = WiFi.SSID(i-1); // 18?
-                SSIDs[i] = WiFi.SSID(i-1); // .substring(0, 15); // 18?
+                SSIDs[i] = WiFi.SSID(i-1);
         }
         SSIDs[numberOfNetworks + 1] = "Back";
         for (int i = numberOfNetworks + 2; i <= MaxSSIDs; i++) {
@@ -98,302 +168,108 @@ void configSSID() {
         Selection = TFTConfigMenu(SSIDs, numberOfNetworks + 2);
 
         if (Selection <= numberOfNetworks) {
-                ssid = WiFi.SSID(Selection -1);
-                while (ssid.length() < 50) {
-                        ssid = ssid + " ";
-                }
-                for (int i = 0; i < 50; i++) {
-                        EEPROM.write(i + 4, ssid.charAt(i));
-                }
-                EEPROM.commit(); return;
+                WifiSSID = WiFi.SSID(Selection - 1);
+                if (SERIAL_DEBUG) { Serial.println("CONFIG : WifiSSID : " + WifiSSID); }
+                EepromWriteString(WifiSSID, EEWifiSSID, 30);
         }
         else if (Selection == numberOfNetworks+1) {
                 return;
         }
 }
 
-void configPW() {
-        int activeChar = 32;
-        String newPassword = "";
-
-        TFTConfigPrepare();
-        TFTConfigPrint(0, "Password", TFT_COLOR_CNF_STD);
-
-        TFTSetFontSize(2); tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-        for (int h = 0; h < 10; h++) {  // ROWS
-                for (int i = 0; i < 10; i++) { // COLS
-                        tft.setCursor(25 + (20 * i), 67 + (20 * h));
-                        if ((33 + (10*h) + i) <= 126) { tft.print(char(33 + (10*h) + i)); }
-                }
-                tft.setCursor(25, 267);
-                tft.print("SPACE");
-                tft.setCursor(115, 267);
-                tft.print("DEL");
-                tft.setCursor(175, 267);
-                tft.print("SET");
-        }
-
-        while(true) {
-
-                Config_Read_Btn();
-                delay(20);
-
-                if (rot_clicks != 0) {
-
-                        if(rot_clicks > 0) { activeChar++; }
-                        if(rot_clicks < 0) { activeChar--; }
-                        // activeChar = activeChar + rot_clicks;
-
-                        rot_clicks = 0;
-                        if (activeChar < 33) {activeChar = 129;}
-                        if (activeChar > 129) {activeChar = 33;}
-
-                        if ((activeChar >= 33) && (activeChar <= 126)) {
-
-                                if (activeChar < 126) {
-                                        tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                        tft.setCursor(25 + (20 * ((activeChar-32) % 10)), 67 + (20 * ((activeChar - 32) / 10)));
-                                        tft.print(char(activeChar + 1));
-                                }
-
-                                if (activeChar > 33) {
-                                        tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                        tft.setCursor(25 + (20 * ((activeChar-34) % 10)), 67 + (20 * ((activeChar - 34) / 10)));
-                                        tft.print(char(activeChar - 1));
-                                }
-
-                                if (activeChar == 33) {
-                                        tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                        tft.setCursor(175, 267);
-                                        tft.print("SET");
-                                }
-
-                                if (activeChar == 126) {
-                                        tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                        tft.setCursor(25, 267);
-                                        tft.print("SPACE");
-                                }
-
-                                tft.setCursor(25 + (20 * ((activeChar-33) % 10)), 67 + (20 * ((activeChar - 33) / 10)));
-                                tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                                tft.print(char(activeChar));
-                        }
-                        else if (activeChar == 127) {
-                                tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                                tft.setCursor(25, 267);
-                                tft.print("SPACE");
-
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.setCursor(85, 247);
-                                tft.print("~");
-                                tft.setCursor(115, 267);
-                                tft.print("DEL");
-                        }
-                        else if (activeChar == 128) {
-                                tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                                tft.setCursor(115, 267);
-                                tft.print("DEL");
-
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.setCursor(25, 267);
-                                tft.print("SPACE");
-                                tft.setCursor(175, 267);
-                                tft.print("SET");
-                        }
-                        else if (activeChar == 129) {
-                                tft.setTextColor(TFT_COLOR_MSG_ERR, TFT_COLOR_FRM_BGR);
-                                tft.setCursor(175, 267);
-                                tft.print("SET");
-
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.setCursor(115, 267);
-                                tft.print("DEL");
-                                tft.setCursor(25, 67);
-                                tft.print("!");
-                        }
-                }
-
-                if (configClick == true) {
-                        configClick = false;
-                        if (activeChar == 129) {
-                                password = newPassword;
-                                while (newPassword.length() < 50) {
-                                        newPassword = newPassword + " ";
-                                }
-                                for (int i = 0; i < 50; i++) {
-                                        EEPROM.write(i + 54, newPassword.charAt(i));
-                                }
-                                EEPROM.commit();
-                                break;
-                        }
-                        else if (activeChar == 128) {
-                                if (password.length() > 0) {
-                                        newPassword = newPassword.substring(0, (newPassword.length() - 1));
-                                }
-                        }
-                        else if (activeChar == 127) {
-                                newPassword = newPassword + " ";
-                        }
-                        else {
-                                newPassword = newPassword + char(activeChar);
-                        }
-
-                        tft.fillRect(10, 285, 220, 25, TFT_COLOR_FRM_BGR);
-                        tft.setCursor(25,287); tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                        tft.print(newPassword);
-                }
-        }
+void configWifiPW() {
+        WifiPW = EepromReadString(EEWifiPW, 30);
+        WifiPW = TFTConfigString("Wifi Password", WifiPW);
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : WifiPW : \"" + WifiPW + "\""); }
+        EepromWriteString(WifiPW, EEWifiPW, 30);
 }
 
-void configIP() {
+void configWifiHost() {
+        WifiHost = EepromReadIP(EEWifiHost);
+        WifiHost = TFTConfigIP("Wifi Host", WifiHost);
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : WifiHost : " + String(WifiHost[0]) + "." + String(WifiHost[1]) + "." + String(WifiHost[2]) + "." + String(WifiHost[3])); }
+        EepromWriteIP(WifiHost, EEWifiHost);
+}
 
-        byte newip[4] = {0, 0, 0, 0};
-        newip[0] = EEPROM.read(0);
-        newip[1] = EEPROM.read(1);
-        newip[2] = EEPROM.read(2);
-        newip[3] = EEPROM.read(3);
-        byte activeip = 0;
+void configWifiPort() {
+        WifiPort = EepromReadInt(EEWifiPort);
+        WifiPort = TFTConfigValue("Wifi Port", 0, 9999, WifiPort, 1, "");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : WifiPort : " + String(WifiPort)); }
+        EepromWriteInt(WifiPort, EEWifiPort);
+}
 
-        TFTConfigPrepare();
-        TFTConfigPrint(0, "IP", TFT_COLOR_CNF_STD);
-        TFTSetFontSize(2);
-        tft.setCursor(ConfigFields[2][0]+7, ConfigFields[2][1]+4);
+void configAPSSID() {
+        APSSID = EepromReadString(EEAPSSID, 30);
+        APSSID = TFTConfigString("AP SSID", APSSID);
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : APSSID : \"" + APSSID + "\""); }
+        EepromWriteString(APSSID, EEAPSSID, 30);
+}
 
-        for (int i = 0; i < activeip; i++) {
-                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                tft.print(newip[i]); tft.print(".");
+void configAPPW() {
+        APPW = EepromReadString(EEAPPW, 30);
+        APPW = TFTConfigString("AP Password", APPW);
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : APPassword : \"" + APPW + "\""); }
+        EepromWriteString(APPW, EEAPPW, 30);
+}
+
+void configAPHost() {
+        APHost = EepromReadIP(EEAPHost);
+        APHost = TFTConfigIP("AP Host IP", APHost);
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : APHost : " + String(APHost[0]) + "." + String(APHost[1]) + "." + String(APHost[2]) + "." + String(APHost[3])); }
+        EepromWriteIP(APHost, EEAPHost);
+}
+
+void configAPPort() {
+        APPort = EepromReadInt(EEAPPort);
+        APPort = TFTConfigValue("AP Port", 0, 9999, APPort, 1, "");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : APPort : " + String(APPort)); }
+        EepromWriteInt(APPort, EEAPPort);
+}
+
+/*
+   void btAdvertisedDeviceFound(BTAdvertisedDevice* pDevice) {
+        Serial.println("Found a device asynchronously: " + pDevice->toString());
+        // Serial.println("Adress: " + String(pDevice.getAddress()));
+   }
+ */
+void configBluetoothHost() {
+
+        // ASYNC
+        /*
+           Serial.print("Starting Async discover...");
+           if (btSerial.discoverAsync(btAdvertisedDeviceFound)) {
+                delay(10000);
+                btSerial.discoverAsyncStop();
+                Serial.println("stopped");
+           } else {
+                Serial.println("Error on discoverAsync f.e. not workin after a \"connect\"");
+           }
+         */
+        // SYNC
+        Serial.println("Starting Sync discover...");
+        BTScanResults *pResults = btSerial.discover(10000);
+        if (pResults) {
+                pResults->dump(&Serial);
         }
-        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-        tft.print(newip[activeip]);
-        for (int i = (activeip + 1); i < 4; i++) {
-                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                tft.print("."); tft.print(newip[i]);
+        else {
+                Serial.println("Error on BT Scan, no result!");
         }
 
 
-        while (true) {
 
-                Config_Read_Btn();
-                delay(20);
 
-                if (configClick == true) {
-                        configClick = false;
-                        activeip++;
-                        if (activeip >= 4) {break;}
-                        tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
-                        tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
-                        for (int i = 0; i < activeip; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(newip[i]); tft.print(".");
-                        }
-                        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                        tft.print(newip[activeip]);
-                        for (int i = (activeip + 1); i < 4; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print("."); tft.print(newip[i]);
-                        }
-                }
-
-                if (rot_clicks != 0) {
-                        newip[activeip] = newip[activeip] + rot_clicks;
-                        rot_clicks = 0;
-                        host[0] = newip[0];  host[1] = newip[1]; host[2] = newip[2]; host[3] = newip[3];
-                        tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
-                        tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
-
-                        for (int i = 0; i < activeip; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(newip[i]); tft.print(".");
-                        }
-
-                        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                        tft.print(newip[activeip]);
-
-                        for (int i = (activeip + 1); i < 4; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print("."); tft.print(newip[i]);
-                        }
-
-                }
-        }
-
-        host[0] = newip[0];  host[1] = newip[1]; host[2] = newip[2]; host[3] = newip[3];
-
-        EEPROM.write(0, newip[0]);
-        EEPROM.write(1, newip[1]);
-        EEPROM.write(2, newip[2]);
-        EEPROM.write(3, newip[3]);
-        EEPROM.commit();
 }
 
-void configPort() {
-
-        port = (EEPROM.read(114) << 8) + EEPROM.read(115);
-        port = TFTConfigValue("Port", 0, 9999, port, 1, "");
-        EEPROM.write(114, port >> 8);
-        EEPROM.write(115, port & 0xFF);
-        EEPROM.commit();
+void configBluetoothPin() {
+        BluetoothPin = EepromReadInt(EEBluetoothPin);
+        BluetoothPin = (int)TFTConfigValue("BluetoothPin", 0, 9999, BluetoothPin, 1, "");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : BluetoothPin : " + String(BluetoothPin)); }
+        EepromWriteInt(BluetoothPin, EEBluetoothPin);
 }
-
-void configAP() {
-
- #define APContentNum 7
-        String APContent[APContentNum] = {
-                "AccessPoint",
-                "AP On/Off",
-                "",
-                "SSID: bCNC-Pend",
-                "PW: bCNC!Pend",
-                "",
-                "Back"
-        };
-
-        APOn = EEPROM.read(112);
-        if (APOn >= 1) { APContent[1] = "AP On"; }
-        else { APContent[1] = "AP Off"; }
-
-        while(true) {
-                switch (TFTConfigMenu(APContent, APContentNum)) {
-                case 1: if (APOn == 0) { APOn = 1; }
-                        else { APOn = 0; }
-                        EEPROM.write(112, APOn);
-                        EEPROM.commit();
-                        if (APOn >= 1) { APContent[1] = "AP On"; }
-                        else { APContent[1] = "AP Off"; }
-                        WiFi.disconnect();
-                        // TFTConfigPrint(1, "  " + APContent[1], TFT_COLOR_CNF_STD);
-                        break;
-                case 2: break;
-                case 3: break;
-                case 4: break;
-                case 5: break;
-                case 6: return;
-                default: return;
-                }
-        }
-}
-
-
-void configSleep() {
-        SleepTime = EEPROM.read(104);
-        SleepTime = (byte)TFTConfigValue("Sleep Time", 0, 20, SleepTime, 1, "min");
-        EEPROM.write(104, SleepTime);
-        EEPROM.commit();
-}
-
-
-void configBrightness() {
-        TFT_BRIGHTNESS = EEPROM.read(113);
-        TFT_BRIGHTNESS = (byte)TFTConfigValue("Brightness", 0, 255, TFT_BRIGHTNESS, 1, "");
-        EEPROM.write(113, TFT_BRIGHTNESS);
-        EEPROM.commit();
-        analogWrite(TFT_LED, TFT_BRIGHTNESS);
-}
-
 
 void configJogging() {
- #define JoggingContentNum 6
-        String JoggingContent[JoggingContentNum] = {
+        const byte ContentNum = 6;
+        const String Content[ContentNum] = {
                 "Jogging",
                 "X Speed",
                 "Y Speed",
@@ -402,112 +278,145 @@ void configJogging() {
                 "Back",
         };
         while(true) {
-                switch (TFTConfigMenu(JoggingContent, JoggingContentNum)) {
+                switch (TFTConfigMenu(Content, ContentNum)) {
                 case 1: configJoggingX(); break;
                 case 2: configJoggingY(); break;
                 case 3: configJoggingZ(); break;
                 case 4: configJoggingA(); break;
                 case 5: return;
-                default: return;
                 }
         }
 }
 
 void configJoggingX() {
-        JogSpeed[1] = (EEPROM.read(116) << 8) + EEPROM.read(117);
-        JogSpeed[1] = (int)TFTConfigValue("X Jogging", 0, 10000, JogSpeed[1], 100, "mm/min");
-        EEPROM.write(116, JogSpeed[1] >> 8);
-        EEPROM.write(117, JogSpeed[1] & 0xFF);
-        EEPROM.commit();
+        JogSpeed[0] = EepromReadInt(EEJogSpeed);
+        JogSpeed[0] = (int)TFTConfigValue("Jogging X", 0, 10000, JogSpeed[0], 100, "mm/min");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedX : " + String(JogSpeed[0])); }
+        EepromWriteInt(JogSpeed[0], EEJogSpeed);
 }
 void configJoggingY() {
-        JogSpeed[2] = (EEPROM.read(118) << 8) + EEPROM.read(119);
-        JogSpeed[2] = (int)TFTConfigValue("Y Jogging", 0, 10000, JogSpeed[2], 100, "mm/min");
-        EEPROM.write(118, JogSpeed[2] >> 8);
-        EEPROM.write(119, JogSpeed[2] & 0xFF);
-        EEPROM.commit();
+        JogSpeed[1] = EepromReadInt(EEJogSpeed+2);
+        JogSpeed[1] = (int)TFTConfigValue("Jogging Y", 0, 10000, JogSpeed[1], 100, "mm/min");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedY : " + String(JogSpeed[1])); }
+        EepromWriteInt(JogSpeed[1], EEJogSpeed+2);
 }
 void configJoggingZ() {
-        JogSpeed[3] = (EEPROM.read(120) << 8) + EEPROM.read(121);
-        JogSpeed[3] = (int)TFTConfigValue("Z Jogging", 0, 10000, JogSpeed[3], 100, "mm/min");
-        EEPROM.write(120, JogSpeed[3] >> 8);
-        EEPROM.write(121, JogSpeed[3] & 0xFF);
-        EEPROM.commit();
+        JogSpeed[2] = EepromReadInt(EEJogSpeed+4);
+        JogSpeed[2] = (int)TFTConfigValue("Jogging Z", 0, 10000, JogSpeed[2], 100, "mm/min");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedZ : " + String(JogSpeed[2])); }
+        EepromWriteInt(JogSpeed[2], EEJogSpeed+4);
 }
 void configJoggingA() {
-        JogSpeed[4] = (EEPROM.read(122) << 8) + EEPROM.read(123);
-        JogSpeed[4] = (int)TFTConfigValue("A Jogging", 0, 10000, JogSpeed[4], 100, "mm/min");
-        EEPROM.write(122, JogSpeed[4] >> 8);
-        EEPROM.write(123, JogSpeed[4] & 0xFF);
-        EEPROM.commit();
+        JogSpeed[3] = EepromReadInt(EEJogSpeed+6);
+        JogSpeed[3] = (int)TFTConfigValue("Jogging A", 0, 10000, JogSpeed[3], 100, "mm/min");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedA : " + String(JogSpeed[3])); }
+        EepromWriteInt(JogSpeed[3], EEJogSpeed+6);
 }
 
 void configProbe() {
- #define ProbeContentNum 6
-        String ProbeContent[ProbeContentNum] = {
+        const byte ContentNum = 7;
+        const String Content[ContentNum] = {
                 "Probe",
                 "Offset",
                 "Depth",
                 "Speed",
                 "Return Height",
+                "Probe Time",
                 "Back"
         };
 
         while(true) {
-                switch (TFTConfigMenu(ProbeContent, ProbeContentNum)) {
+                switch (TFTConfigMenu(Content, ContentNum)) {
                 case 1: configProbeOffset(); break;
                 case 2: configProbeDepth(); break;
                 case 3: configProbeSpeed(); break;
                 case 4: configProbeBackHeight(); break;
-                case 5: return;
-                default: return;
+                case 5: configProbeTime(); break;
+                case 6: return;
                 }
         }
 }
 
 
-
-
 void configProbeOffset() {
-        ProbeOffset = (EEPROM.read(105) << 8) + EEPROM.read(106);
-        float ProbeOffsetFloat = ProbeOffset / 100;
-        ProbeOffsetFloat = TFTConfigValue("Offset", 0, 50, ProbeOffsetFloat, 0.01, "mm");
-        ProbeOffset = ProbeOffsetFloat * 100;
-        EEPROM.write(105, ProbeOffset >> 8);
-        EEPROM.write(106, ProbeOffset & 0xFF);
-        EEPROM.commit();
+        ProbeOffset = EepromReadFloat(EEProbeOffset);
+        // float ProbeOffsetFloat = ProbeOffset / 100.0;
+        ProbeOffset = TFTConfigValue("Probe Offset", 0, 50, ProbeOffset, 0.01, "mm");
+        // ProbeOffset = (int)(ProbeOffsetFloat * 100);
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeOffset : " + String(ProbeOffset)); }
+        EepromWriteFloat(ProbeOffset, EEProbeOffset);
 }
 
 
 void configProbeDepth() {
-        ProbeDepth = (EEPROM.read(107) << 8) + EEPROM.read(108);
+        ProbeDepth = EepromReadInt(EEProbeDepth);
         if (ProbeDepth > 32767) { ProbeDepth = ProbeDepth - 65536; }  // 65535
-        ProbeDepth = (int)TFTConfigValue("Depth", -100, 100, ProbeDepth, 1, "mm");
-        EEPROM.write(107, ProbeDepth >> 8);
-        EEPROM.write(108, ProbeDepth & 0xFF);
-        EEPROM.commit();
+        ProbeDepth = (int)TFTConfigValue("Probe Depth", -100, 100, ProbeDepth, 1, "mm");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeDepth : " + String(ProbeDepth)); }
+        EepromWriteInt(ProbeDepth, EEProbeDepth);
 }
 
 
 void configProbeSpeed() {
-        ProbeSpeed = (EEPROM.read(109) << 8) + EEPROM.read(110);
-        ProbeSpeed = (int)TFTConfigValue("Speed", 0, 1000, ProbeSpeed, 1, "mm / min");
-        EEPROM.write(109, ProbeSpeed >> 8);
-        EEPROM.write(110, ProbeSpeed & 0xFF);
-        EEPROM.commit();
+        ProbeSpeed = EepromReadInt(EEProbeSpeed);
+        ProbeSpeed = (int)TFTConfigValue("Probe Speed", 0, 1000, ProbeSpeed, 1, "mm / min");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeSpeed : " + String(ProbeSpeed)); }
+        EepromWriteInt(ProbeSpeed, EEProbeSpeed);
 }
 
 
 void configProbeBackHeight() {
-        ProbeBackHeight = EEPROM.read(111);
-        ProbeBackHeight = (byte)TFTConfigValue("Rise", 0, 100, ProbeBackHeight, 1, "mm");
-        EEPROM.write(111, ProbeBackHeight);
+        ProbeBackHeight = EEPROM.read(EEProbeBackHeight);
+        ProbeBackHeight = (byte)TFTConfigValue("Probe Rise", 0, 100, ProbeBackHeight, 1, "mm");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeBackHeight : " + String(ProbeBackHeight)); }
+        EEPROM.write(EEProbeBackHeight, ProbeBackHeight);
         EEPROM.commit();
 }
 
+void configProbeTime() {
+        ProbeTime = EEPROM.read(EEProbeTime);
+        ProbeTime = (byte)TFTConfigValue("Probe Time", 1, 20, ProbeTime, 1, "sec");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeTime : " + String(ProbeTime)); }
+        EEPROM.write(EEProbeTime, ProbeTime);
+        EEPROM.commit();
+}
+
+void configSleep() {
+        SleepTime = EEPROM.read(EESleepTime);
+        SleepTime = (byte)TFTConfigValue("Sleep Time", 0, 20, SleepTime, 1, "min");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : SleepTime : " + String(SleepTime)); }
+        EEPROM.write(EESleepTime, SleepTime);
+        EEPROM.commit();
+        SleepTicker.interval(SleepTime * 60000);
+        if (SleepTime == 0) { SleepTicker.stop(); }
+}
+
+void configBrightness() {
+        TFT_BRIGHTNESS = EEPROM.read(EEBrightness);
+        TFT_BRIGHTNESS = (byte)TFTConfigValue("Brightness", 0, 255, TFT_BRIGHTNESS, 1, "");
+        if (SERIAL_DEBUG) { Serial.println("CONFIG : TftBrightness : " + String(TFT_BRIGHTNESS)); }
+        EEPROM.write(EEBrightness, TFT_BRIGHTNESS);
+        EEPROM.commit();
+        analogWrite(TFT_LED, TFT_BRIGHTNESS);
+}
+
+void configBattery() {
+        float V = readBattery();
+        const byte ContentNum = 6;
+        const String Content[ContentNum] = {
+                "Battery",
+                "",
+                "Voltage: " + String(V) + "V",
+                "Fill:    " + String (percentageBattery(V)) + "%",
+                "",
+                "Back"
+        };
+        TFTConfigInfo(Content, ContentNum);
+}
+
 void configInfo() {
- #define InfoContentNum 7
-        String InfoContent[InfoContentNum] = {
+        const byte ContentNum = 7;
+        const String Content[ContentNum] = {
                 "Info",
                 "(c) 2021",
                 "Paul Schwaderer",
@@ -516,103 +425,5 @@ void configInfo() {
                 "",
                 "Back"
         };
-        TFTConfigPrepare();
-        for (int i = 0; i < InfoContentNum; i++) {
-                TFTConfigPrint(i, InfoContent[i], TFT_COLOR_CNF_STD);
-        }
-        while(true) {
-                delay(20);
-                Config_Read_Btn();
-                if (configClick == true) { configClick = false; return; }
-        }
-}
-
-void Config_Read_Btn() {
-        btn_current2 = btn_current1;
-        btn_current1 = (digitalRead(BUTTON_PIN) == LOW);
-        if (btn_current1 == btn_current2) {
-                if ((btn_current1 != btn_last) && (btn_current1 == true)) { configClick = true; }
-                btn_last = btn_current1;
-        }
-}
-
-
-
-void TFTConfigPrepare() {
-        tft.fillRect(0,0,240,320,TFT_COLOR_BGR);
-        tft.drawRect(ConfigForms[0][0]-1,ConfigForms[0][1]-1,ConfigForms[0][2]+2,ConfigForms[0][3]+2,TFT_COLOR_FRM_LIN);
-        tft.fillRect(ConfigForms[0][0],ConfigForms[0][1],ConfigForms[0][2],ConfigForms[0][3], TFT_COLOR_FRM_BGR);
-        tft.drawRect(ConfigForms[1][0]-1,ConfigForms[1][1]-1,ConfigForms[1][2]+2,ConfigForms[1][3]+2,TFT_COLOR_FRM_LIN);
-        tft.fillRect(ConfigForms[1][0],ConfigForms[1][1],ConfigForms[1][2],ConfigForms[1][3], TFT_COLOR_FRM_BGR);
-}
-
-
-byte TFTConfigMenu(String* Content, int Length) {
-
-        byte activeMenu = 1;
-        TFTConfigPrepare();
-        TFTConfigPrint(0, Content[0], TFT_COLOR_CNF_STD);
-        TFTConfigPrint(1, "> " + Content[1], TFT_COLOR_CNF_STD);
-
-        for (int i = 2; i < Length; i++) {
-                TFTConfigPrint(i, "  " + Content[i], TFT_COLOR_CNF_STD);
-        }
-
-        while(true) {
-                Config_Read_Btn();
-                delay(20);
-                if (rot_clicks != 0) {
-                        TFTConfigPrint(activeMenu, "  " + Content[activeMenu], TFT_COLOR_CNF_STD);
-                        activeMenu = activeMenu + rot_clicks;
-                        if (activeMenu > (Length - 1)) {activeMenu = 1;}
-                        if (activeMenu < 1) {activeMenu = (Length - 1);}
-                        TFTConfigPrint(activeMenu, "> " + Content[activeMenu], TFT_COLOR_CNF_STD);
-                        rot_clicks = 0;
-                }
-
-                if (configClick == true) {
-                        configClick = false;
-                        return(activeMenu);
-                }
-        }
-}
-
-
-float TFTConfigValue(String Name, int Min, int Max, float Value, float Factor, String Unit) {
-
-        TFTConfigPrepare();
-        TFTConfigPrint(0, Name, TFT_COLOR_CNF_STD);
-        if (Factor == (int)Factor) { TFTConfigPrint(2, " " + String((int)Value) + " " + Unit, TFT_COLOR_CNF_STD); }
-        else { TFTConfigPrint(2, " " + String(Value) + " " + Unit, TFT_COLOR_CNF_STD); }
-
-        while(true) {
-                Config_Read_Btn();
-                delay(20);
-                if (rot_clicks != 0) {
-                        Value = Value + (rot_clicks * Factor);
-                        if (Value > Max) {Value = Min;}
-                        if (Value < Min) {Value = Max;}
-
-                        if (Factor == (int)Factor) { TFTConfigPrint(2, " " + String((int)Value) + " " + Unit, TFT_COLOR_CNF_STD); }
-                        else { TFTConfigPrint(2, " " + String(Value) + " " + Unit, TFT_COLOR_CNF_STD); }
-                        rot_clicks = 0;
-                }
-
-                if (configClick == true) {
-                        configClick = false;
-                        return(Value);
-                }
-        }
-
-}
-
-
-
-void TFTConfigPrint(byte Aim, String Content, int Color) {
-        Content = Content.substring(0,17);
-        tft.fillRect(ConfigFields[Aim][0],ConfigFields[Aim][1],ConfigFields[Aim][2],ConfigFields[Aim][3], TFT_COLOR_FRM_BGR);
-        TFTSetFontSize(ConfigFields[Aim][4]);
-        tft.setTextColor(Color, TFT_COLOR_FRM_BGR);
-        tft.setCursor(ConfigFields[Aim][0]+7, ConfigFields[Aim][1]+4); // was 7/4
-        tft.print(Content);
+        TFTConfigInfo(Content, ContentNum);
 }
