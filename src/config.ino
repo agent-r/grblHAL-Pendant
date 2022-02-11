@@ -234,7 +234,7 @@ void configBluetoothHost() {
         byte activeByte = 0;
 
         TFTConfigPrepare();
-        TFTConfigPrint(0, "Bluetooth Addr,", TFT_COLOR_CNF_STD);
+        TFTConfigPrint(0, "Bluetooth Addr", TFT_COLOR_CNF_STD);
         TFTSetFontSize(2);
         tft.setCursor(ConfigFields[2][0]+7, ConfigFields[2][1]+4);
 
@@ -304,7 +304,7 @@ void configBluetoothHost() {
 
 void configBluetoothPin() {
         BluetoothPin = EepromReadInt(EEBluetoothPin);
-        BluetoothPin = (int)TFTConfigValue("BluetoothPin", 0, 9999, BluetoothPin, 1, "");
+        BluetoothPin = (int)TFTConfigValue("Bluetooth Pin", 0, 9999, BluetoothPin, 1, "");
         if (SERIAL_DEBUG) { Serial.println("CONFIG : BluetoothPin : " + String(BluetoothPin)); }
         EepromWriteInt(BluetoothPin, EEBluetoothPin);
 }
@@ -460,10 +460,10 @@ void configInfo() {
         const byte ContentNum = 7;
         const String Content[ContentNum] = {
                 "Info",
-                "(c) 2021",
+                "(c) 2022",
                 "Paul Schwaderer",
-                "github.com/agent",
-                "-r/bCNC-PENDANT",
+                "github.com/agent-r",
+                "/grblhal-pendant",
                 "",
                 "Back"
         };
