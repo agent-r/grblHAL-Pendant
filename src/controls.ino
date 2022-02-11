@@ -3,11 +3,21 @@
 /////////////////////      CONTROLS      //////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-
-void checkEncoder() {
+/*
+   void checkEncoder() {
         if (rotaryEncoder.encoderChanged()) {
                 sendCmd("gcode", "$J=G91" + AxisName[activeAxis] + (factor[activeFactor] * rotaryEncoder.readEncoder() * AxisDir[activeAxis]) + "F" + JogSpeed[activeAxis], "JOG " + AxisName[activeAxis] + (factor[activeFactor] * rotaryEncoder.readEncoder() * AxisDir[activeAxis]));
                 rotaryEncoder.reset();
+                if (SleepTime > 0) {SleepTicker.start();}
+        }
+   }
+ */
+
+void checkEncoder() {
+        int count = rotaryEncoder.getCount();
+        if (count != 0) {
+                sendCmd("gcode", "$J=G91" + AxisName[activeAxis] + (factor[activeFactor] * count * AxisDir[activeAxis]) + "F" + JogSpeed[activeAxis], "JOG " + AxisName[activeAxis] + (factor[activeFactor] * count * AxisDir[activeAxis]));
+                rotaryEncoder.clearCount();
                 if (SleepTime > 0) {SleepTicker.start();}
         }
 }
@@ -37,7 +47,6 @@ void checkKeypad() {
                 case 9: setZero(); break;                       // run()
                 case 10: increaseAxis(); break;                     // stop()
                 case 11: decreaseAxis(); break;                   // unlock()
-                default: break;
                 }
         }
 }
@@ -95,14 +104,11 @@ bool checkConfig() {
 
 ////////////////////////    BATTERY    ////////////////////////
 
-// HIGH: 4.2 V
-// LOW: ?? V
 
 void checkBattery() {
         float battery_state = readBattery();
         int battery_percentage = percentageBattery(battery_state);
         String batteryMessage = "Battery: " + String(battery_state) + "V / " + String(battery_percentage) + "%";
-
         if (battery_percentage < 25) { TFTPrint(MessageField, batteryMessage, TFT_COLOR_MSG_ERR); }
         else { TFTPrint(MessageField, batteryMessage, TFT_COLOR_MSG_NRM); }
 }

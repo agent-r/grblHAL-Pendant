@@ -49,12 +49,12 @@ void probeZ() {
                         delay(20);
                 }
 
-                delay(100);     // was 200
+                delay(100);
                 sendCmd("gcode", "G90", "");
-                delay(100);     // was 200
+                delay(100);
                 if (!Probe_Alarm) {
-                        sendCmd("gcode", "G10L20Z" + String(ProbeOffset/100.0), "PROBE: OK");
-                        delay(100);     // was 200
+                        sendCmd("gcode", "G10L20Z" + String(ProbeOffset), "PROBE: OK");
+                        delay(100);
                         sendCmd("gcode", "$J=G91Z" + String(ProbeBackHeight) + "F" + String(JogSpeed[2]), "PROBE: OK");
                 }
                 else {
@@ -67,14 +67,10 @@ void probeZ() {
 
 void homeAll() {
         TFTPrint(MessageField, "Confirm HOME ?", TFT_COLOR_MSG_ERR);
-        // for (int i = 0; i < 50; i++) {
         if (checkEnterConfirm()) {
                 sendCmd("gcode", "$H", "HOME ALL");
                 return;
         }
-        // TftTicker.update();
-        // delay(50);
-        // }
         TFTPrint(MessageField, "", TFT_COLOR_MSG_NRM);
 }
 
@@ -96,21 +92,6 @@ void decreaseFactor(){
         factorchange = true;
 }
 
-/*
-   void run() {
-        TFTPrint(MessageField, "Confirm RUN ?", TFT_COLOR_MSG_ERR);
-        for (int i = 0; i < 50; i++) {
-                if (digitalRead(BUTTON_PIN) == LOW) {
-                        sendCmd("cmd", "START", "START");
-                        while (digitalRead(BUTTON_PIN) == LOW) {delay(50);}
-                        return;
-                }
-                delay(50);
-        }
-        TFTPrint(MessageField, "", TFT_COLOR_MSG_NRM);
-   }
- */
-
 void enter() {
-        // do something like START // RESUME ??
+        sendCmd("cmd", "START", "START");
 }

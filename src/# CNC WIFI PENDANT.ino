@@ -1,7 +1,7 @@
 
 /////////////////////////////////////////
 //
-//  TODO: DEEP SLEEP OR LIGHT SLEEP !!!
+//   GRBLHAL PENDANT
 //
 /////////////////////////////////////////
 
@@ -9,7 +9,6 @@
 ////////////////////////////////////////
 // 36   ROT CLK : A
 // 39   ROT DT  : B
-// 32   ROT SW  : N/A
 // 33   KEY SIG
 // 21   TFT DC
 // 18   TFT SCK
@@ -17,6 +16,8 @@
 // 23   TFT MOSI
 // 22   TFT CS
 // 17   TFT LED
+// VCC  TFT RESET
+// 34   BATTERY VOLTAGE DIVIDER
 
 
 // LIBRARIES
@@ -25,7 +26,8 @@
 #include "BluetoothSerial.h"
 #include <EEPROM.h>                 // EEPROM
 #include <TickTwo.h>                // TICKER
-#include "AiEsp32RotaryEncoder.h"   // ROTARY ENCODER
+// #include "AiEsp32RotaryEncoder.h"   // ROTARY ENCODER
+#include "ESP32Encoder.h"
 #include <ArduinoJson.h>            // JSON
 #include <SPI.h>                    // TFT
 #include <TFT_eSPI.h>               // TFT
@@ -37,11 +39,11 @@
 
 
 // DEBUG
-static bool SERIAL_DEBUG = true;
+static bool SERIAL_DEBUG = false;
 static bool SERIAL_DEBUG_IN = false;
 
 
-// WiFi
+// WiFi & WiFi-AP
 byte ConnectionMode = 0; // 0 = WIFI SLAVE    1 = WIFI AP    2 = BLUETOOTH SLAVE
 WiFiClient TCPClient;
 
@@ -58,14 +60,13 @@ int APPort = 8880;
 // BLUETOOTH
 uint8_t BluetoothHost[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F};
 int BluetoothPin = 1234;
-// uint8_t btAddress[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F};     // MUCH FASTER !!!
 BluetoothSerial btSerial;
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
 #endif
 
 
-//EEPROM
+//EEPROM ADDRESSES
 #define EEConnectionMode 0  //          Byte (1)
 #define EEWifiSSID 1        // bis 30   String (30)
 #define EEWifiPW 31         // bis 60   String (30)
@@ -88,23 +89,26 @@ BluetoothSerial btSerial;
 
 
 // ROTARY ENCODER
+
 #define ROTARY_ENCODER_A_PIN GPIO_NUM_36
 #define ROTARY_ENCODER_B_PIN GPIO_NUM_39
-#define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
-#define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
-#define ROTARY_ENCODER_STEPS 4
-volatile int rot_clicks = 0;
-AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
-void IRAM_ATTR readEncoderISR() {
+/*
+ #define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
+ #define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
+ #define ROTARY_ENCODER_STEPS 4
+   volatile int rot_clicks = 0;
+   AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
+   void IRAM_ATTR readEncoderISR() {
         rotaryEncoder.readEncoder_ISR();
-}
+   }
+ */
+ESP32Encoder rotaryEncoder;
 #define ENCODER_FPS 5              // Update Rate for Sending Code
 void checkEncoder();
 TickTwo EncoderTicker(checkEncoder, (1000 / ENCODER_FPS));
 
 
 // KEYPAD
-// #define BUTTON_PIN 32       // NOT USED !!! SHOULD BE DELETED
 #define KEYPAD_PIN GPIO_NUM_33       // ONLY ADC1-PINS !!!
 #define KEYPAD_DEBOUNCE 80       // Debounce for Buttons
 void checkKeypad();
@@ -136,8 +140,8 @@ uint64_t SleepPinMask = 0;
 // #define TFT_MOSI   23
 // #define TFT_DC 21        //
 // #define TFT_CS 22       //
-#define TFT_LED GPIO_NUM_17      // DIMM via PWM
 // #define TFT_RST 4       // TO VCC !!!
+#define TFT_LED GPIO_NUM_17
 TFT_eSPI tft = TFT_eSPI();
 #define TFT_FPS 20
 void TFTUpdate();
@@ -164,7 +168,7 @@ TickTwo TftTicker(TFTUpdate, (1000 / TFT_FPS));
 #define StateField 5
 #define MessageField 6
 #define tftRotation  2
-byte TFT_BRIGHTNESS = 127;
+byte TFT_BRIGHTNESS;
 
 #define BLINK_FPS 3
 void TFTBlink();
@@ -186,7 +190,7 @@ bool hold = true;     // wait till connection is REALLY there !
 uint16_t activeAxis = 0;
 const String AxisName[4] = {"X", "Y", "Z", "A"};
 const int AxisDir[4] = {1, 1, -1, 1};
-int JogSpeed[4] = {2000, 2000, 1000, 1000};
+int JogSpeed[4];
 bool axischange = true;
 
 float wx;
@@ -211,19 +215,14 @@ const float factor[5] = {0.01, 0.1, 1, 10, 100};
 const String strFactor[5] = {"0.01", "0.10", "1.00", "10.0", "100 "};
 bool factorchange = true;
 
-// String LastSentCommand = "";
-// byte MessageCounter = 0;
-
-// TODO: CHANGE THIS BEHAVIOUR !!!
-// #define MessageTime  6 * TFT_FPS    // seconds (How many Frames of TFT Update)
 
 // PROBE
-float ProbeOffset = 27.80;     // Height of probe-button (mm/100) = 27.80mm
-int ProbeSpeed = 100;       // Speed to go down
-int ProbeDepth = -30;       // Distance to go down
-byte ProbeBackHeight = 10;  // Distance zo go up after probing
-byte ProbeTime = 10;        // Maximum Seconds to Wait for Probe Success / Failure
-bool Probe_Alarm = false;   // flag to check Alarm
+float ProbeOffset;     // Height of probe-button (mm/100) = 27.80mm
+int ProbeSpeed;       // Speed to go down
+int ProbeDepth;       // Distance to go down
+byte ProbeBackHeight;  // Distance zo go up after probing
+byte ProbeTime;        // Maximum Seconds to Wait for Probe Success / Failure
+bool Probe_Alarm;   // flag to check Alarm
 
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////      SETUP       //////////////////////////////////
@@ -232,19 +231,18 @@ bool Probe_Alarm = false;   // flag to check Alarm
 void setup() {
 
         Serial.begin(115200);
-
-        // pinMode(ROTARY_PIN_CLK, INPUT_PULLUP);
-        // pinMode(ROTARY_PIN_DT, INPUT_PULLUP);
-        // pinMode(BUTTON_PIN, INPUT_PULLUP);
         pinMode(KEYPAD_PIN, INPUT);
         pinMode(BATTERY_PIN, INPUT);
         pinMode(TFT_LED, OUTPUT);
-        // digitalWrite(TFT_LED, HIGH);
 
         // STARTING ENCODER INTERRUPTS:
-        rotaryEncoder.begin();
-        rotaryEncoder.setup(readEncoderISR);
-        rotaryEncoder.disableAcceleration();
+        // rotaryEncoder.begin();
+        // rotaryEncoder.setup(readEncoderISR);
+        // rotaryEncoder.disableAcceleration();
+        ESP32Encoder::useInternalWeakPullResistors=DOWN; // DOWN or UP?
+        rotaryEncoder.attachSingleEdge(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN);
+        rotaryEncoder.setFilter(511);   // max 1023
+        rotaryEncoder.setCount(0);
 
         tft.begin();
         tft.setRotation(tftRotation);
@@ -336,7 +334,7 @@ void loop() {
         EncoderTicker.update();
         KeypadTicker.update();
         BatteryTicker.update();
-        // BlinkTicker.update();
+        // BlinkTicker.update();  // used only within config-loops
         MessageTicker.update();
         SleepTicker.update();
         HoldTicker.update();

@@ -72,7 +72,6 @@ void TFTUpdate() {
                 else { TFTPrint(StateField, state, TFT_COLOR_STA_ERR); }
                 statechange = false;
         }
-
 }
 
 
@@ -104,7 +103,7 @@ void TFTSleep() {
         ConnectionSetup();
         if (SERIAL_DEBUG) { Serial.println("... WAKE UP"); }
         wxchange = true; wychange = true; wzchange = true, wachange = true; statechange = true;
-        rotaryEncoder.reset();
+        rotaryEncoder.clearCount();
         analogWrite(TFT_LED, TFT_BRIGHTNESS);
         TFTPrepare();
         if (SleepTime > 0 ) {SleepTicker.start();}
@@ -125,36 +124,28 @@ void TFTPrint(const byte Aim, String Content, const int Color) {
 void TFTSetFontSize(const int size) {
         if (size == 2) {
                 tft.unloadFont();
-                tft.loadFont(TFT_FONT_SMALL); // Must load the font first
+                tft.loadFont(TFT_FONT_SMALL);
         }
         else if (size == 3) {
                 tft.unloadFont();
-                tft.loadFont(TFT_FONT_LARGE); // Must load the font first
+                tft.loadFont(TFT_FONT_LARGE);
         }
 }
 
 
 void TFTPrepare() {
         tft.fillRect(0,0,240,320,TFT_COLOR_BGR);
-        tft.drawRect(Fields[0][0]-1,Fields[0][1]-1,Fields[0][2]+2,Fields[0][3]+2,TFT_COLOR_FRM_LIN);
-        tft.drawRect(Fields[1][0]-1,Fields[1][1]-1,Fields[1][2]+2,Fields[1][3]+2,TFT_COLOR_FRM_LIN);
-        tft.drawRect(Fields[2][0]-1,Fields[2][1]-1,Fields[2][2]+2,Fields[2][3]+2,TFT_COLOR_FRM_LIN);
-        tft.drawRect(Fields[3][0]-1,Fields[3][1]-1,Fields[3][2]+2,Fields[3][3]+2,TFT_COLOR_FRM_LIN);
-        tft.drawRect(Fields[4][0]-1,Fields[4][1]-1,Fields[4][2]+2,Fields[4][3]+2,TFT_COLOR_FRM_LIN);
-        tft.drawRect(Fields[5][0]-1,Fields[5][1]-1,Fields[5][2]+2,Fields[5][3]+2,TFT_COLOR_FRM_LIN);
-        tft.drawRect(Fields[6][0]-1,Fields[6][1]-1,Fields[6][2]+2,Fields[6][3]+2,TFT_COLOR_FRM_LIN);
+        for (int i = 0; i <= 6; i++) {
+                tft.drawRect(Fields[i][0]-1,Fields[i][1]-1,Fields[i][2]+2,Fields[i][3]+2,TFT_COLOR_FRM_LIN);
+        }
         tft.drawFastHLine(Line[0],Line[1],Line[2],TFT_COLOR_FRM_LIN);
         TFTClear();
 }
 
 void TFTClear() {
-        tft.fillRect(Fields[0][0],Fields[0][1],Fields[0][2],Fields[0][3],TFT_COLOR_FRM_BGR);
-        tft.fillRect(Fields[1][0],Fields[1][1],Fields[1][2],Fields[1][3],TFT_COLOR_FRM_BGR);
-        tft.fillRect(Fields[2][0],Fields[2][1],Fields[2][2],Fields[2][3],TFT_COLOR_FRM_BGR);
-        tft.fillRect(Fields[3][0],Fields[3][1],Fields[3][2],Fields[3][3],TFT_COLOR_FRM_BGR);
-        tft.fillRect(Fields[4][0],Fields[4][1],Fields[4][2],Fields[4][3],TFT_COLOR_FRM_BGR);
-        tft.fillRect(Fields[5][0],Fields[5][1],Fields[5][2],Fields[5][3],TFT_COLOR_FRM_BGR);
-        tft.fillRect(Fields[6][0],Fields[6][1],Fields[6][2],Fields[6][3],TFT_COLOR_FRM_BGR);
+        for (int i = 0; i <= 6; i++) {
+                tft.fillRect(Fields[i][0],Fields[i][1],Fields[i][2],Fields[i][3],TFT_COLOR_FRM_BGR);
+        }
         wxchange = true; wychange = true; wzchange = true; wachange = true; factorchange = true; statechange = true;
 }
 

@@ -18,7 +18,7 @@ void ConnectionSetup() {
         case 2:                         // BLUETOOTH
                 WiFi.disconnect();
                 WiFi.mode(WIFI_OFF);
-                btSerial.begin("BTMaster", true);
+                btSerial.begin("BTMaster", true);  // true = master
                 break;
         }
 }
@@ -140,9 +140,16 @@ bool ConnectBT() {
         return(true);
 }
 
+// BLUETOOTH HC-05 MODULE AT-SETTINGS:
+/*
+   AT+UART=115200,0,0
+   AT+NAME=GRBLHAL
+   AT+ROLE=0          // SLAVE
+   AT+PSWD="1234"     // 1234
+   AT+ADDR?           // 21:13:13C6F = 00:21:13:01:3C:6F
+                      // 21:13:12CC9 = 00:21:13:01:2C:C9
+ */
 
-////  TESTCODE:     {"state":"TESTSTATE*1","wx":1.000000,"wy":2.000000,"wz":3.000000,"wa":360.00}
-/// 7.000000}*{"state":"TESTSTATE*1","wx":2.000000,"wy":3.000000,"wz":4.000000}?{"state":"TESTSTATE*1","wx":5.000000,"wy":6.000000,"wz":
 void getState() {
 
         static char TCPBuffer[128];
@@ -261,10 +268,7 @@ void sendCmd(const String type, const String cmd, const String cmd_info) {
                 case 2:
                         btSerial.println("{\"" + type + "\":\"" + cmd + "\"}");
                         break;
-                default:
-                        break;
                 }
-                // TCPClient.println("{\"" + type + "\":\"" + cmd + "\"}");
                 if (SERIAL_DEBUG) {Serial.println("{\"" + type + "\":\"" + cmd + "\"}");}
                 TFTPrint(MessageField, cmd_info, TFT_COLOR_MSG_NRM);
         }
@@ -276,20 +280,6 @@ void sendCmd(const String type, const String cmd, const String cmd_info) {
 
 void Hold() {
         hold = true;
-        /*
-           static byte holdCounter = 0;
-           if (ConnectionMode == 2) {       // > BT
-                if (holdCounter >= 5) { // > LongTime Unavailable
-                        HoldTicker.stop();
-                        holdCounter = 0;
-                        ConnectionSetup();
-                }
-                holdCounter++;
-           }
-           else {
-                HoldTicker.stop();
-           }
-         */
         if (SERIAL_DEBUG) {Serial.println("WARNING: HOLD!");}
         HoldTicker.stop();
 }

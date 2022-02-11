@@ -279,9 +279,10 @@ void configBluetoothHost() {
                         }
                 }
 
-                if (rotaryEncoder.encoderChanged()) {
-                        BluetoothHost[activeByte] = BluetoothHost[activeByte] + rotaryEncoder.readEncoder();
-                        rotaryEncoder.reset();
+                int count = rotaryEncoder.getCount();
+                if (count != 0) {
+                        BluetoothHost[activeByte] = BluetoothHost[activeByte] + count;
+                        rotaryEncoder.clearCount();
                         tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
                         tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
 
