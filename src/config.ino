@@ -141,7 +141,7 @@ void configConnectionSettings() {
         case 2:
                 while(true) {
                         switch (TFTConfigMenu(ContentBluetooth, ContentNumBluetooth)) {
-                        case 1: configBluetoothHost(); break;
+                        case 1: configBluetoothAddress(); break;
                         case 2: configBluetoothPin(); break;
                         case 3: return;
                         }
@@ -193,7 +193,7 @@ void configWifiHost() {
 
 void configWifiPort() {
         WifiPort = EepromReadInt(EEWifiPort);
-        WifiPort = TFTConfigValue("Wifi Port", 0, 9999, WifiPort, 1, "");
+        WifiPort = TFTConfigValue("Wifi Port", 0, 9999, WifiPort, 0, "", 4);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : WifiPort : " + String(WifiPort)); }
         EepromWriteInt(WifiPort, EEWifiPort);
 }
@@ -221,32 +221,36 @@ void configAPHost() {
 
 void configAPPort() {
         APPort = EepromReadInt(EEAPPort);
-        APPort = TFTConfigValue("AP Port", 0, 9999, APPort, 1, "");
+        APPort = TFTConfigValue("AP Port", 0, 9999, APPort, 0, "", 4);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : APPort : " + String(APPort)); }
         EepromWriteInt(APPort, EEAPPort);
 }
 
 
-void configBluetoothHost() {
+void configBluetoothAddress() {
         for (int i = 0; i < 6; i++) {
                 BluetoothHost[i] = EEPROM.read(EEBluetoothHost + i);
         }
         byte activeByte = 0;
 
+        char strAddress[20];
         TFTConfigPrepare();
         TFTConfigPrint(0, "Bluetooth Addr", TFT_COLOR_CNF_STD);
         TFTSetFontSize(2);
         tft.setCursor(ConfigFields[2][0]+7, ConfigFields[2][1]+4);
 
         for (int i = 0; i < activeByte; i++) {
+                sprintf(strAddress,"%02x:", BluetoothHost[i]);
                 tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                tft.print(BluetoothHost[i], HEX); tft.print(":");
+                tft.print(strAddress);
         }
         tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-        tft.print(BluetoothHost[activeByte], HEX);
+        sprintf(strAddress,"%02x", BluetoothHost[activeByte]);
+        tft.print(strAddress);
         for (int i = (activeByte + 1); i < 6; i++) {
+                sprintf(strAddress,":%02x", BluetoothHost[i]);
                 tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                tft.print(":"); tft.print(BluetoothHost[i], HEX);
+                tft.print(strAddress);
         }
 
         while (true) {
@@ -255,10 +259,11 @@ void configBluetoothHost() {
                         activeByte++;
 
                         if (activeByte >= 6) {
-                                Serial.print("Bluetooth Host: ");
-                                for (int i = 0; i < 6; i++) {
-                                        EEPROM.write(EEBluetoothHost + i, BluetoothHost[i]);
-                                        Serial.print(BluetoothHost[i], HEX); Serial.print(":");
+                                for (int i = 0; i < 6; i++) { EEPROM.write(EEBluetoothHost + i, BluetoothHost[i]);                                 }
+                                if(SERIAL_DEBUG) {
+                                        Serial.print("Bluetooth Host: ");
+                                        sprintf(strAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BluetoothHost[0],BluetoothHost[1],BluetoothHost[2],BluetoothHost[3],BluetoothHost[4],BluetoothHost[5]);
+                                        Serial.println(strAddress);
                                 }
                                 EEPROM.commit();
                                 Serial.println();
@@ -268,14 +273,17 @@ void configBluetoothHost() {
                         tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
                         tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
                         for (int i = 0; i < activeByte; i++) {
+                                sprintf(strAddress,"%02x:", BluetoothHost[i]);
                                 tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(BluetoothHost[i], HEX); tft.print(":");
+                                tft.print(strAddress);
                         }
                         tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                        tft.print(BluetoothHost[activeByte], HEX);
+                        sprintf(strAddress,"%02x", BluetoothHost[activeByte]);
+                        tft.print(strAddress);
                         for (int i = (activeByte + 1); i < 6; i++) {
+                                sprintf(strAddress,":%02x", BluetoothHost[i]);
                                 tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(":"); tft.print(BluetoothHost[i], HEX);
+                                tft.print(strAddress);
                         }
                 }
 
@@ -285,18 +293,18 @@ void configBluetoothHost() {
                         rotaryEncoder.clearCount();
                         tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
                         tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
-
                         for (int i = 0; i < activeByte; i++) {
+                                sprintf(strAddress,"%02x:", BluetoothHost[i]);
                                 tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(BluetoothHost[i], HEX); tft.print(":");
+                                tft.print(strAddress);
                         }
-
                         tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                        tft.print(BluetoothHost[activeByte], HEX);
-
+                        sprintf(strAddress,"%02x", BluetoothHost[activeByte]);
+                        tft.print(strAddress);
                         for (int i = (activeByte + 1); i < 6; i++) {
+                                sprintf(strAddress,":%02x", BluetoothHost[i]);
                                 tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(":"); tft.print(BluetoothHost[i], HEX);
+                                tft.print(strAddress);
                         }
                 }
         }
@@ -304,7 +312,7 @@ void configBluetoothHost() {
 
 void configBluetoothPin() {
         BluetoothPin = EepromReadInt(EEBluetoothPin);
-        BluetoothPin = (int)TFTConfigValue("Bluetooth Pin", 0, 9999, BluetoothPin, 1, "");
+        BluetoothPin = (int)TFTConfigValue("Bluetooth Pin", 0, 9999, BluetoothPin, 0, "", 4);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : BluetoothPin : " + String(BluetoothPin)); }
         EepromWriteInt(BluetoothPin, EEBluetoothPin);
 }
@@ -332,25 +340,25 @@ void configJogging() {
 
 void configJoggingX() {
         JogSpeed[0] = EepromReadInt(EEJogSpeed);
-        JogSpeed[0] = (int)TFTConfigValue("Jogging X", 0, 10000, JogSpeed[0], 100, "mm/min");
+        JogSpeed[0] = (int)TFTConfigValue("Jogging X", 0, 10000, JogSpeed[0], 2, " mm/min", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedX : " + String(JogSpeed[0])); }
         EepromWriteInt(JogSpeed[0], EEJogSpeed);
 }
 void configJoggingY() {
         JogSpeed[1] = EepromReadInt(EEJogSpeed+2);
-        JogSpeed[1] = (int)TFTConfigValue("Jogging Y", 0, 10000, JogSpeed[1], 100, "mm/min");
+        JogSpeed[1] = (int)TFTConfigValue("Jogging Y", 0, 10000, JogSpeed[1], 2, " mm/min", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedY : " + String(JogSpeed[1])); }
         EepromWriteInt(JogSpeed[1], EEJogSpeed+2);
 }
 void configJoggingZ() {
         JogSpeed[2] = EepromReadInt(EEJogSpeed+4);
-        JogSpeed[2] = (int)TFTConfigValue("Jogging Z", 0, 10000, JogSpeed[2], 100, "mm/min");
+        JogSpeed[2] = (int)TFTConfigValue("Jogging Z", 0, 10000, JogSpeed[2], 2, " mm/min", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedZ : " + String(JogSpeed[2])); }
         EepromWriteInt(JogSpeed[2], EEJogSpeed+4);
 }
 void configJoggingA() {
         JogSpeed[3] = EepromReadInt(EEJogSpeed+6);
-        JogSpeed[3] = (int)TFTConfigValue("Jogging A", 0, 10000, JogSpeed[3], 100, "mm/min");
+        JogSpeed[3] = (int)TFTConfigValue("Jogging A", 0, 10000, JogSpeed[3], 2, " mm/min", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedA : " + String(JogSpeed[3])); }
         EepromWriteInt(JogSpeed[3], EEJogSpeed+6);
 }
@@ -383,7 +391,7 @@ void configProbe() {
 void configProbeOffset() {
         ProbeOffset = EepromReadFloat(EEProbeOffset);
         // float ProbeOffsetFloat = ProbeOffset / 100.0;
-        ProbeOffset = TFTConfigValue("Probe Offset", 0, 50, ProbeOffset, 0.01, "mm");
+        ProbeOffset = TFTConfigValue("Probe Offset", 0, 50, ProbeOffset, -2, " mm", 0);
         // ProbeOffset = (int)(ProbeOffsetFloat * 100);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeOffset : " + String(ProbeOffset)); }
         EepromWriteFloat(ProbeOffset, EEProbeOffset);
@@ -393,7 +401,7 @@ void configProbeOffset() {
 void configProbeDepth() {
         ProbeDepth = EepromReadInt(EEProbeDepth);
         if (ProbeDepth > 32767) { ProbeDepth = ProbeDepth - 65536; }  // 65535
-        ProbeDepth = (int)TFTConfigValue("Probe Depth", -100, 100, ProbeDepth, 1, "mm");
+        ProbeDepth = (int)TFTConfigValue("Probe Depth", -100, 100, ProbeDepth, 0, " mm", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeDepth : " + String(ProbeDepth)); }
         EepromWriteInt(ProbeDepth, EEProbeDepth);
 }
@@ -401,7 +409,7 @@ void configProbeDepth() {
 
 void configProbeSpeed() {
         ProbeSpeed = EepromReadInt(EEProbeSpeed);
-        ProbeSpeed = (int)TFTConfigValue("Probe Speed", 0, 1000, ProbeSpeed, 1, "mm / min");
+        ProbeSpeed = (int)TFTConfigValue("Probe Speed", 0, 1000, ProbeSpeed, 0, " mm / min", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeSpeed : " + String(ProbeSpeed)); }
         EepromWriteInt(ProbeSpeed, EEProbeSpeed);
 }
@@ -409,7 +417,7 @@ void configProbeSpeed() {
 
 void configProbeBackHeight() {
         ProbeBackHeight = EEPROM.read(EEProbeBackHeight);
-        ProbeBackHeight = (byte)TFTConfigValue("Probe Rise", 0, 100, ProbeBackHeight, 1, "mm");
+        ProbeBackHeight = (byte)TFTConfigValue("Probe Rise", 0, 100, ProbeBackHeight, 0, " mm", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeBackHeight : " + String(ProbeBackHeight)); }
         EEPROM.write(EEProbeBackHeight, ProbeBackHeight);
         EEPROM.commit();
@@ -417,7 +425,7 @@ void configProbeBackHeight() {
 
 void configProbeTime() {
         ProbeTime = EEPROM.read(EEProbeTime);
-        ProbeTime = (byte)TFTConfigValue("Probe Time", 1, 20, ProbeTime, 1, "sec");
+        ProbeTime = (byte)TFTConfigValue("Probe Time", 1, 20, ProbeTime, 0, " sec", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : ProbeTime : " + String(ProbeTime)); }
         EEPROM.write(EEProbeTime, ProbeTime);
         EEPROM.commit();
@@ -425,7 +433,7 @@ void configProbeTime() {
 
 void configSleep() {
         SleepTime = EEPROM.read(EESleepTime);
-        SleepTime = (byte)TFTConfigValue("Sleep Time", 0, 20, SleepTime, 1, "min");
+        SleepTime = (byte)TFTConfigValue("Sleep Time", 0, 20, SleepTime, 0, " min", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : SleepTime : " + String(SleepTime)); }
         EEPROM.write(EESleepTime, SleepTime);
         EEPROM.commit();
@@ -435,7 +443,7 @@ void configSleep() {
 
 void configBrightness() {
         TFT_BRIGHTNESS = EEPROM.read(EEBrightness);
-        TFT_BRIGHTNESS = (byte)TFTConfigValue("Brightness", 0, 255, TFT_BRIGHTNESS, 1, "");
+        TFT_BRIGHTNESS = (byte)TFTConfigValue("Brightness", 0, 255, TFT_BRIGHTNESS, 0, "", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : TftBrightness : " + String(TFT_BRIGHTNESS)); }
         EEPROM.write(EEBrightness, TFT_BRIGHTNESS);
         EEPROM.commit();

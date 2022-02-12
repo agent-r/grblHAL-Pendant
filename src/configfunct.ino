@@ -50,23 +50,24 @@ byte TFTConfigMenu(const String* Content, const int Length) {
 }
 
 
-float TFTConfigValue(const String Title, const int Min, const int Max, float Value, const float Factor, const String Unit) {
-
+float TFTConfigValue(const String Title, const int Min, const int Max, float Value, const int Factor, const char* Unit, const byte leadingZeros) {
+        // Factor -2=100, -1=10, 0=1, 1=0.1 2=0.01 etc.
         TFTConfigPrepare();
         TFTConfigPrint(0, Title, TFT_COLOR_CNF_STD);
-        if (Factor == (int)Factor) { TFTConfigPrint(2, " " + String((int)Value) + " " + Unit, TFT_COLOR_CNF_STD); }
-        else { TFTConfigPrint(2, " " + String(Value) + " " + Unit, TFT_COLOR_CNF_STD); }
+        char strValue[20];
+        int Decimals = Factor* -1; if (Decimals < 0) { Decimals = 0; }
+        sprintf(strValue, "%0*.*f %s", leadingZeros, Decimals, Value, Unit);
+        TFTConfigPrint(2, String(strValue), TFT_COLOR_CNF_STD);
 
-        while(true) {
+        while (true) {
                 delay(20);
                 int count = rotaryEncoder.getCount();
                 if (count != 0) {
-                        Value = Value + (count * Factor);
+                        Value = Value + (count * pow(10, Factor));
                         if (Value > Max) {Value = Min;}
                         if (Value < Min) {Value = Max;}
-
-                        if (Factor == (int)Factor) { TFTConfigPrint(2, " " + String((int)Value) + " " + Unit, TFT_COLOR_CNF_STD); }
-                        else { TFTConfigPrint(2, " " + String(Value) + " " + Unit, TFT_COLOR_CNF_STD); }
+                        sprintf(strValue, "%0*.*f %s", leadingZeros, Decimals, Value, Unit);
+                        TFTConfigPrint(2, String(strValue), TFT_COLOR_CNF_STD);
                         rotaryEncoder.clearCount();
                 }
 
@@ -74,7 +75,6 @@ float TFTConfigValue(const String Title, const int Min, const int Max, float Val
                         return(Value);
                 }
         }
-
 }
 
 #define COLWIDTH 18
@@ -185,9 +185,8 @@ int TFTConfigStringCharPosY(int Position) {
 
 
 IPAddress TFTConfigIP (const String Title, IPAddress newIP) {
-
         byte activeByte = 0;
-
+        String strIP;
         TFTConfigPrepare();
         TFTConfigPrint(0, Title, TFT_COLOR_CNF_STD);
         TFTSetFontSize(2);
@@ -206,14 +205,13 @@ IPAddress TFTConfigIP (const String Title, IPAddress newIP) {
 
         while (true) {
                 delay(20);
-
                 if (checkEnter()) {
                         activeByte++;
 
                         if (activeByte >= 4) { return(newIP); }
-
                         tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
                         tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
+
                         for (int i = 0; i < activeByte; i++) {
                                 tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
                                 tft.print(newIP[i]); tft.print(".");
