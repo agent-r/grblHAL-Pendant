@@ -3,25 +3,26 @@
 /////////////////////      CONTROLS      //////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-/*
-   void checkEncoder() {
+
+void checkEncoder() {
         if (rotaryEncoder.encoderChanged()) {
                 sendCmd("gcode", "$J=G91" + AxisName[activeAxis] + (factor[activeFactor] * rotaryEncoder.readEncoder() * AxisDir[activeAxis]) + "F" + JogSpeed[activeAxis], "JOG " + AxisName[activeAxis] + (factor[activeFactor] * rotaryEncoder.readEncoder() * AxisDir[activeAxis]));
                 rotaryEncoder.reset();
                 if (SleepTime > 0) {SleepTicker.start();}
         }
-   }
- */
+}
 
-void checkEncoder() {
+
+/*
+   void checkEncoder() {
         int count = rotaryEncoder.getCount();
         if (count != 0) {
                 sendCmd("gcode", "$J=G91" + AxisName[activeAxis] + (factor[activeFactor] * count * AxisDir[activeAxis]) + "F" + JogSpeed[activeAxis], "JOG " + AxisName[activeAxis] + (factor[activeFactor] * count * AxisDir[activeAxis]));
                 rotaryEncoder.clearCount();
                 if (SleepTime > 0) {SleepTicker.start();}
         }
-}
-
+   }
+ */
 
 /////////////////////////////////////////////////////////////////
 

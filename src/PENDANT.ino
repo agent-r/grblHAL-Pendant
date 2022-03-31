@@ -1,4 +1,3 @@
-
 /////////////////////////////////////////
 //
 //   GRBLHAL PENDANT
@@ -8,7 +7,7 @@
 /////////////////////////////////////////
 //
 //   TODO:  -> Multi-Char Numbers in Config (BT Address, BT Pin, hosts) (sprintf ??)
-//          ->
+//          -> More
 //
 /////////////////////////////////////////
 
@@ -31,11 +30,12 @@
 // LIBRARIES
 #include <WiFi.h>                   // WIFI
 #include <WiFiClient.h>             // WIFI
-#include "BluetoothSerial.h"
+// #include "BluetoothSerialPatched.h"
+#include <BluetoothSerial.h>
 #include <EEPROM.h>                 // EEPROM
 #include <TickTwo.h>                // TICKER
-// #include "AiEsp32RotaryEncoder.h"   // ROTARY ENCODER
-#include "ESP32Encoder.h"
+#include "AiEsp32RotaryEncoder.h"   // ROTARY ENCODER
+// #include "ESP32Encoder.h"
 #include <ArduinoJson.h>            // JSON
 #include <SPI.h>                    // TFT
 #include <TFT_eSPI.h>               // TFT
@@ -67,7 +67,10 @@ int APPort = 8880;
 
 // BLUETOOTH
 uint8_t BluetoothHost[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F};
+uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F}; // 002113013C6F
 int BluetoothPin = 1234;
+const char *BluetoothPinFix = "1234";
+String BluetoothSSIDFix = "GRBLHAL";
 BluetoothSerial btSerial;
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
@@ -100,17 +103,17 @@ BluetoothSerial btSerial;
 
 #define ROTARY_ENCODER_A_PIN GPIO_NUM_36
 #define ROTARY_ENCODER_B_PIN GPIO_NUM_39
-/*
- #define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
- #define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
- #define ROTARY_ENCODER_STEPS 4
-   volatile int rot_clicks = 0;
-   AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
-   void IRAM_ATTR readEncoderISR() {
+
+#define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
+#define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
+#define ROTARY_ENCODER_STEPS 4
+volatile int rot_clicks = 0;
+AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
+void IRAM_ATTR readEncoderISR() {
         rotaryEncoder.readEncoder_ISR();
-   }
- */
-ESP32Encoder rotaryEncoder;
+}
+
+// ESP32Encoder rotaryEncoder;
 #define ENCODER_FPS 5              // Update Rate for Sending Code
 void checkEncoder();
 TickTwo EncoderTicker(checkEncoder, (1000 / ENCODER_FPS));
@@ -223,6 +226,8 @@ const float factor[5] = {0.01, 0.1, 1, 10, 100};
 const String strFactor[5] = {"0.01", "0.10", "1.00", "10.0", "100 "};
 bool factorchange = true;
 
+// WORKSPACE
+int WorkSpace = 54;
 
 // PROBE
 float ProbeOffset;     // Height of probe-button (mm/100) = 27.80mm
@@ -244,13 +249,13 @@ void setup() {
         pinMode(TFT_LED, OUTPUT);
 
         // STARTING ENCODER INTERRUPTS:
-        // rotaryEncoder.begin();
-        // rotaryEncoder.setup(readEncoderISR);
-        // rotaryEncoder.disableAcceleration();
-        ESP32Encoder::useInternalWeakPullResistors=DOWN; // DOWN or UP?
-        rotaryEncoder.attachSingleEdge(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN);
-        rotaryEncoder.setFilter(511);   // max 1023
-        rotaryEncoder.setCount(0);
+        rotaryEncoder.begin();
+        rotaryEncoder.setup(readEncoderISR);
+        rotaryEncoder.disableAcceleration();
+        // ESP32Encoder::useInternalWeakPullResistors=DOWN; // DOWN or UP?
+        // rotaryEncoder.attachSingleEdge(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN);
+        // rotaryEncoder.setFilter(511);   // max 1023
+        // rotaryEncoder.setCount(0);
 
         tft.begin();
         tft.setRotation(tftRotation);
@@ -317,8 +322,6 @@ void setup() {
 
         if (SERIAL_DEBUG) {Serial.println("-------- EEPROM END ---------");}
 
-        if (checkConfig()) { config(); } // Start config routine
-
         // STARTING INTERRUPTS !
         TftTicker.start();
         if (SleepTime > 0) { SleepTicker.start(); }
@@ -326,6 +329,8 @@ void setup() {
         EncoderTicker.start();
         BatteryTicker.start();
         // BlinkTicker.start();
+
+        if (checkConfig()) { config(); } // Start config routine
 
         TFTPrepare();
         ConnectionSetup();

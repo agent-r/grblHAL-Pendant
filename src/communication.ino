@@ -18,7 +18,8 @@ void ConnectionSetup() {
         case 2:                         // BLUETOOTH
                 WiFi.disconnect();
                 WiFi.mode(WIFI_OFF);
-                btSerial.begin("BTMaster", true);  // true = master
+                btSerial.begin("PENDANT", true); // MASTER
+                // btSerial.begin("PENDANT");  // SLAVE
                 break;
         }
 }
@@ -129,15 +130,44 @@ bool ConnectTCP(IPAddress tcpip, int tcpport) {
 
 
 bool ConnectBT() {
+
+/*
+        btSerial.setPin(String(BluetoothPin).c_str());
+        bool success = btSerial.connect(BluetoothHost);
+
+        if(btSerial.connect(BluetoothHost)) {
+                Serial.println("Connected by Address Succesfully!");
+                return(true);
+        }
+
+        if(btSerial.connect("GRBLHAL")) {
+                Serial.println("Connected by SSID Succesfully!");
+                return(true);
+        }
+
+        while(!btSerial.connected(1000)) {
+                Serial.println("Failed to connect. Make sure remote device is available and in range, then restart app.");
+        }
+        if (btSerial.disconnect()) {
+                Serial.println("Disconnected Succesfully!");
+        }
+        // this would reconnect to the name(will use address, if resolved) or address used with connect(name/address).
+        success = btSerial.connect();
+        return(success);
+   }
+ */
+
         while(!btSerial.connected(0)) {
                 TFTPrint(MessageField, "Starting BLUETOOTH..", TFT_COLOR_STA_ERR);
                 SleepTicker.update();
-                if (checkConfig()) { config(); return(false); }              // Start config routine
+                if (checkConfig()) { config(); return(false); }                      // Start config routine
                 if (SERIAL_DEBUG) { Serial.println("WARNING: BT CONNECTING! Device is available?"); }
+                btSerial.setPin(BluetoothPinFix);
                 btSerial.connect(BluetoothHost);
                 delay(50);
         }
         return(true);
+
 }
 
 // BLUETOOTH HC-05 MODULE AT-SETTINGS:
@@ -146,8 +176,8 @@ bool ConnectBT() {
    AT+NAME=GRBLHAL
    AT+ROLE=0          // SLAVE
    AT+PSWD="1234"     // 1234
-   AT+ADDR?           // 21:13:13C6F = 00:21:13:01:3C:6F
-                      // 21:13:12CC9 = 00:21:13:01:2C:C9
+   AT+ADDR?           // 21:13:13C6F = 00:21:13:01:3C:6F -> TEST 002113013C6F
+                      // 21:13:12CC9 = 00:21:13:01:2C:C9 -> CNC
  */
 
 void getState() {
@@ -249,6 +279,7 @@ void deserialize(String JsonString) {
                         state = String(statechar);
                         if (state != stateold) { statechange = true; stateold = state; }
                         if (state == "Alarm") { Probe_Alarm = true; }
+                        if (state == "Run") { SleepTicker.start(); }
                         hold = false;
                         HoldTicker.start();
                 }

@@ -24,11 +24,12 @@ const int ConfigFields[12][5] = {
 
 
 void config() {
-        const byte ContentNum = 9;
+        const byte ContentNum = 10;
         const String Content[ContentNum] = {
                 "Config",
                 "Connection",
                 "Jogging",
+                "Workspace",
                 "Probe",
                 "Sleep Mode",
                 "Brightness",
@@ -40,12 +41,13 @@ void config() {
                 switch (TFTConfigMenu(Content, ContentNum)) {
                 case 1: configConnection(); break;
                 case 2: configJogging(); break;
-                case 3: configProbe(); break;
-                case 4: configSleep(); break;
-                case 5: configBrightness(); break;
-                case 6: configBattery(); break;
-                case 7: configInfo(); break;
-                case 8: TFTPrepare(); ConnectionSetup(); return;
+                case 3: configWorkspace(); break;
+                case 4: configProbe(); break;
+                case 5: configSleep(); break;
+                case 6: configBrightness(); break;
+                case 7: configBattery(); break;
+                case 8: configInfo(); break;
+                case 9: TFTPrepare(); ConnectionSetup(); return;
                 }
         }
 }
@@ -94,24 +96,25 @@ void configConnectionSettings() {
         const byte ContentNumWifi = 6;
         const String ContentWifi[ContentNumWifi] = {
                 "WiFi",
-                "SSID",
-                "Password",
-                "Host IP",
-                "Host Port",
+                "WiFi SSID",
+                "WiFi Password",
+                "WiFi Host IP",
+                "WiFi Host Port",
                 "Back"
         };
         const byte ContentNumAP = 6;
         const String ContentAP[ContentNumAP] = {
                 "WiFi AP",
-                "SSID",
-                "Password",
-                "Host IP",
-                "Host Port",
+                "AP SSID",
+                "AP Password",
+                "AP Host IP",
+                "AP Host Port",
                 "Back"
         };
-        const byte ContentNumBluetooth = 4;
+        const byte ContentNumBluetooth = 5;
         const String ContentBluetooth[ContentNumBluetooth] = {
                 "Bluetooth",
+                "Bluetooth SSID",
                 "Bluetooth Host",
                 "Bluetooth Pin",
                 "Back"
@@ -141,9 +144,10 @@ void configConnectionSettings() {
         case 2:
                 while(true) {
                         switch (TFTConfigMenu(ContentBluetooth, ContentNumBluetooth)) {
-                        case 1: configBluetoothAddress(); break;
-                        case 2: configBluetoothPin(); break;
-                        case 3: return;
+                        case 1: configBluetoothSSID(); break;
+                        case 2: configBluetoothAddress(); break;
+                        case 3: configBluetoothPin(); break;
+                        case 4: return;
                         }
                 }
         }
@@ -226,7 +230,6 @@ void configAPPort() {
         EepromWriteInt(APPort, EEAPPort);
 }
 
-
 void configBluetoothAddress() {
         for (int i = 0; i < 6; i++) {
                 BluetoothHost[i] = EEPROM.read(EEBluetoothHost + i);
@@ -287,10 +290,12 @@ void configBluetoothAddress() {
                         }
                 }
 
-                int count = rotaryEncoder.getCount();
+                // int count = rotaryEncoder.getCount();
+                int count = rotaryEncoder.readEncoder();
                 if (count != 0) {
                         BluetoothHost[activeByte] = BluetoothHost[activeByte] + count;
-                        rotaryEncoder.clearCount();
+                        // rotaryEncoder.clearCount();
+                        rotaryEncoder.reset();
                         tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
                         tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
                         for (int i = 0; i < activeByte; i++) {
@@ -309,6 +314,105 @@ void configBluetoothAddress() {
                 }
         }
 }
+
+/*
+   String BluetoothSSIDNameList[10];
+   uint8_t BluetoothAddressList[10][6];
+   bool BluetoothSSIDFound = false;
+   int BluetoothSSIDNum = -1;
+
+   void configBluetoothDeviceFound(BTAdvertisedDevice* pDevice) {
+        String strBluetoothSSID;
+        char strBluetoothAddress[20];
+        BluetoothSSIDFound = true;
+        BluetoothSSIDNum++;
+        if (BluetoothSSIDNum < 10) {
+                // BluetoothSSIDNameList[BluetoothSSIDNum] = pDevice->toString().c_str();
+                // BluetoothSSIDNameList[BluetoothSSIDNum] = pDevice->getName().c_str();
+                strBluetoothSSID = pDevice->getName().c_str();
+                memcpy(BluetoothAddressList[BluetoothSSIDNum], pDevice->getAddress().getNative(), 6);
+
+                if (strBluetoothSSID == "") {
+                        sprintf(strBluetoothAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BluetoothAddressList[BluetoothSSIDNum][0],BluetoothAddressList[BluetoothSSIDNum][1],BluetoothAddressList[BluetoothSSIDNum][2],BluetoothAddressList[BluetoothSSIDNum][3],BluetoothAddressList[BluetoothSSIDNum][4],BluetoothAddressList[BluetoothSSIDNum][5]);
+                        BluetoothSSIDNameList[BluetoothSSIDNum] = String(strBluetoothAddress);
+                }
+                else {
+                        BluetoothSSIDNameList[BluetoothSSIDNum] = strBluetoothSSID;
+                }
+                // BluetoothAddressListString[BluetoothSSIDNum] = pDevice->getAddress().toString().c_str();
+        }
+   }
+ */
+
+void configBluetoothSSID() {
+        /*
+            char strAddress[20];
+            byte activeMenu = 1;
+
+            TFTConfigPrepare();
+            TFTConfigPrint(0, "Bluetooth SSID", TFT_COLOR_CNF_STD);
+            TFTSetFontSize(2);
+            btSerial.disconnect();
+            btSerial.end();
+            btSerial.begin("BTMaster", true);  // true = master
+            delay(100);
+
+            TFTConfigPrint(1, "> ", TFT_COLOR_CNF_STD);
+            TFTConfigPrint(11, "  Back", TFT_COLOR_CNF_STD);
+
+            if (btSerial.discoverAsync(configBluetoothDeviceFound)) {
+                    Serial.println("Start Search");
+            } else {
+                    Serial.println("Error on discoverAsync f.e. not workin after a \"connect\"");
+            }
+
+            while (true) {
+                    if (BluetoothSSIDFound) {
+                            if (BluetoothSSIDNameList[BluetoothSSIDNum] != "") {
+                                    TFTConfigPrint(BluetoothSSIDNum+1, BluetoothSSIDNameList[BluetoothSSIDNum], TFT_COLOR_CNF_STD);
+                            }
+                            else {
+                                    sprintf(strAddress,"  %02x:%02x:%02x:%02x:%02x:%02x",BluetoothAddressList[BluetoothSSIDNum][0],BluetoothAddressList[BluetoothSSIDNum][1],BluetoothAddressList[BluetoothSSIDNum][2],BluetoothAddressList[BluetoothSSIDNum][3],BluetoothAddressList[BluetoothSSIDNum][4],BluetoothAddressList[BluetoothSSIDNum][5]);
+                                    TFTConfigPrint(BluetoothSSIDNum+1, strAddress, TFT_COLOR_CNF_STD);
+                                    // TFTConfigPrint(BluetoothSSIDNum+1, String(BluetoothAddressListString[BluetoothSSIDNum]), TFT_COLOR_CNF_STD);
+                            }
+                            BluetoothSSIDFound = false;
+                    }
+
+                    // int count = rotaryEncoder.getCount();
+                    int count = rotaryEncoder.readEncoder();
+                    // rotaryEncoder.clearCount();
+                    rotaryEncoder.reset();
+
+                    if ((count != 0) || BluetoothSSIDFound) {
+
+                            for (int i = 0; i < BluetoothSSIDNum; i++) {
+                                    TFTConfigPrint(i+1, "  " + BluetoothSSIDNameList[i], TFT_COLOR_CNF_STD);
+                            }
+                            // TFTConfigPrint(activeMenu, "  " + Content[activeMenu], TFT_COLOR_CNF_STD);
+                            // activeMenu = activeMenu + count;
+                            // if (activeMenu > (Length - 1)) {activeMenu = 1;}
+                            // if (activeMenu < 1) {activeMenu = (Length - 1);}
+                            // TFTConfigPrint(activeMenu, "> " + Content[activeMenu], TFT_COLOR_CNF_STD);
+                            TFTConfigPrint(BluetoothSSIDNum+1, "  Back", TFT_COLOR_CNF_STD);
+
+                            // rotaryEncoder.clearCount();
+                            rotaryEncoder.reset();
+                            BluetoothSSIDFound = false;
+                    }
+
+                    if (checkEnter()) {
+                            // return(activeMenu);
+                            return;
+                    }
+                    delay(20);
+            }
+
+            Serial.print("Stop Search");
+            btSerial.discoverAsyncStop();
+         */
+}
+
 
 void configBluetoothPin() {
         BluetoothPin = EepromReadInt(EEBluetoothPin);
@@ -361,6 +465,35 @@ void configJoggingA() {
         JogSpeed[3] = (int)TFTConfigValue("Jogging A", 0, 10000, JogSpeed[3], 2, " mm/min", 0);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : JogSpeedA : " + String(JogSpeed[3])); }
         EepromWriteInt(JogSpeed[3], EEJogSpeed+6);
+}
+
+
+void configWorkspace() {
+        const byte ContentNum = 8;
+        const String Content[ContentNum] = {
+                "Workspace",
+                "G54 (Standard)",
+                "G55",
+                "G56",
+                "G57",
+                "G58",
+                "G59",
+                "Back"
+        };
+
+        while(true) {
+                switch (TFTConfigMenu(Content, ContentNum)) {
+                case 1: WorkSpace = 54; break;
+                case 2: WorkSpace = 55; break;
+                case 3: WorkSpace = 56; break;
+                case 4: WorkSpace = 57; break;
+                case 5: WorkSpace = 58; break;
+                case 6: WorkSpace = 59; break;
+                case 7: return;
+                }
+                sendCmd("gcode", "G" + String(WorkSpace), "G" + String(WorkSpace));
+                return;
+        }
 }
 
 void configProbe() {

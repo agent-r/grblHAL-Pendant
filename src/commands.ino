@@ -17,7 +17,9 @@ void increaseAxis() {
 }
 
 void setZero() {
-        sendCmd("gcode", "G10L20P1" + AxisName[activeAxis] + "0", "Set " + AxisName[activeAxis] + "0");
+        //-> P1=G54 P2=G55 P3=G56 P4=G57 P5=G58 P6=G59 ... P0=ActiveWorkspace
+        // sendCmd("gcode", "G10L20P1" + AxisName[activeAxis] + "0", "Set " + AxisName[activeAxis] + "0");  //-> P1=G54 P2=G55 P3=G56
+        sendCmd("gcode", "G10L20P0" + AxisName[activeAxis] + "0", "Set " + AxisName[activeAxis] + "0");
 }
 
 void gotoZero() {
@@ -27,23 +29,22 @@ void gotoZero() {
 void probeZ() {
 
         bool run_check = false;
-
         Probe_Alarm = false;
+
         TFTPrint(MessageField, "Confirm Z PROBE ?", TFT_COLOR_MSG_ERR);
         if (checkEnterConfirm()) {
 
                 sendCmd("gcode", "G91", ""); delay(50);
+                // {"gcode":"G38.2Z-1F100"}
                 sendCmd("gcode", "G38.2Z" + String(ProbeDepth) + "F" + String(ProbeSpeed), "PROBE: GO DOWN"); delay(100);
 
-
                 for (int i = 0; i < (ProbeTime * 50); i++) {
-
+                        // CAN THIS BE DONE WIHT A "DWELL"-COMMAND (= WAIT FOR BUFFER EMPTY) ???
                         TftTicker.update();
                         if (state == "Run") { run_check = true; }
                         if ((state == "Idle") && run_check) { break; }
 
                         if (Probe_Alarm) {
-                                Serial.println("PROBE: ALARM");
                                 break;
                         }
                         delay(20);
@@ -53,7 +54,8 @@ void probeZ() {
                 sendCmd("gcode", "G90", "");
                 delay(100);
                 if (!Probe_Alarm) {
-                        sendCmd("gcode", "G10L20Z" + String(ProbeOffset), "PROBE: OK");
+                        // sendCmd("gcode", "G10L20Z" + String(ProbeOffset), "PROBE: OK");
+                        sendCmd("gcode", "G10L20P0Z" + String(ProbeOffset), "PROBE: OK");
                         delay(100);
                         sendCmd("gcode", "$J=G91Z" + String(ProbeBackHeight) + "F" + String(JogSpeed[2]), "PROBE: OK");
                 }
@@ -95,3 +97,5 @@ void decreaseFactor(){
 void enter() {
         sendCmd("cmd", "START", "START");
 }
+
+// {"msg":"O"}

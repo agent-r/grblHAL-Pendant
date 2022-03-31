@@ -55,10 +55,7 @@ void TFTUpdate() {
                 factorchange = false;
         }
         if (statechange) {
-                if (state == "Run") {
-                        TFTPrint(StateField, state, TFT_COLOR_STA_NRM);
-                        if (SleepTime > 0 ) {SleepTicker.start();}      // DONT SLEEP !
-                }
+                if (state == "Run") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
                 else if (state == "Jog") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
                 else if (state == "Idle") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
                 else if (state == "Hold") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
@@ -103,7 +100,8 @@ void TFTSleep() {
         ConnectionSetup();
         if (SERIAL_DEBUG) { Serial.println("... WAKE UP"); }
         wxchange = true; wychange = true; wzchange = true, wachange = true; statechange = true;
-        rotaryEncoder.clearCount();
+        // rotaryEncoder.clearCount();
+        rotaryEncoder.reset();
         analogWrite(TFT_LED, TFT_BRIGHTNESS);
         TFTPrepare();
         if (SleepTime > 0 ) {SleepTicker.start();}
