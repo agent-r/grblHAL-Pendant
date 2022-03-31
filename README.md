@@ -1,10 +1,10 @@
-# bCNC Pendant
+# grblHAL Pendant
 
 (This project is work in progress)
 
-I am using a WeMos Lolin32 to build a Pendant for grblHAL
+I am using a WeMos Lolin32 to build a Pendant for grblHAL.
 
-Machine state and Position are passed from the grblHAL-Plugin by the Esp01 and then WiFi-transferred to the pendant. Pendant commands are WiFi-transfered to the Esp01 and then passed to the grblHAL-Plugin.
+Machine state and position are passed from grblHAL via a plugin to a Esp01-Wifi-Module or a HC-05-Bluetooth-Module. The Pendant connects to one of these modules, receives this data and shows it on a tft display. 12 Buttons and a handwheel are there to send commands to the machine.
 
 ![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
@@ -13,13 +13,15 @@ Machine state and Position are passed from the grblHAL-Plugin by the Esp01 and t
 - CNC pendant for up to 4 axis
 - Rotary encoder and 12 buttons
 - TFT display showing position and machine state
-- Wireless connection
+- Wireless connection (Bluetooth or WiFi)
 - Battery powered
 - Functions:
-  - Jogging
+  - jogging (jandwheel)
   - goto Axis Zero
+  - set Axis Zero
   - Probing Routine
   - Homing
+  - Start
   - Stop/Hold
   - Unlock
 
@@ -40,7 +42,7 @@ Machine state and Position are passed from the grblHAL-Plugin by the Esp01 and t
   - Rotary encoder
   - LiPo Battery
   - PCB Board
-  
+
 
 ## Bill of Materials (see pictures in "Pictures" folder):
 
