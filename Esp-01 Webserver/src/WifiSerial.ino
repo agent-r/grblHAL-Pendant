@@ -8,8 +8,6 @@
 
 // config: ////////////////////////////////////////////////////////////
 
-#define buffer_size 128     // better 256?
-
 const char *ssid = "grblHAL";           // You will connect your penant to this Access Point
 const char *pw = "grblHAL1";            // and this is the password
 IPAddress ip(192, 168, 0, 1);           // this is the ip
@@ -20,7 +18,6 @@ IPAddress netmask(255, 255, 255, 0);
 
 WiFiServer Server(TCP_PORT);
 WiFiClient TCPClient;
-
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -36,21 +33,17 @@ void setup() {
         WiFi.softAP(ssid, pw);
 
         Server.begin();
-        // Server.setNoDelay(true); // ? TRUE > NO NAGLE ALGORITHM
 
 }
 
 
 void loop()
 {
-
         TCPClient = Server.available();
-
         if (TCPClient) {
                 if(TCPClient.connected())
                 {
                         Serial.println("Client Connected");
-                        // TCPClient.setNoDelay(true);
                 }
                 else {
                         Serial.println("No Client Connected");
@@ -61,7 +54,7 @@ void loop()
                                 // read data from the connected client
                                 Serial.write(TCPClient.read());
                         }
-                        //Send Data to connected client
+                        // send Data to connected client
                         while(Serial.available()>0)
                         {
                                 TCPClient.write(Serial.read());
@@ -73,5 +66,4 @@ void loop()
         }
 
         // delay(5);
-
 }
