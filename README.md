@@ -50,7 +50,7 @@ for the electronic parts see also [pictures here](/Pictures/BoM).
   - [Firmware](/src) and some [libraries](/lib)
 
 
-## HowTo: The grblHAl controller side
+## HowTo: The grblHAL controller side
 
 To be able to connect the pendant to grblHAL (at least if you use a Teensy4.1), you have to add a Bluetooth or Wifi module to your controller.
 

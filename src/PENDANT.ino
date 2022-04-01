@@ -45,6 +45,10 @@
 #include <esp_wifi.h>               // FOR SLEEP !
 #include <esp_bt.h>                 // FOR SLEEP !
 
+// Needed for Bluetooth SSID-Search. This is not supported in official current arduino/platformio releases
+// comment out, if you use official releases.
+// you have to set BT-MAC-Address manually then.
+#define USE_NEW_ARDUINO_ESP 1
 
 // DEBUG
 static bool SERIAL_DEBUG = false;
