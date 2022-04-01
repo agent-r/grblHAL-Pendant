@@ -51,9 +51,7 @@ for the electronic parts see also [pictures here](/Pictures).
   - you might have to install some arduino libraries (see .ino files)
 
 
-## HowTo:
-
-# The grblHAl controller side
+## HowTo: The grblHAl controller side
 
 **The grblHAl controller side**
 
@@ -61,7 +59,7 @@ To be able to connect the pendant to grblHAL (at least if you use a Teensy4.1), 
 
 I recommend using Bluetooth (for example aHC-05 module), as I noticed some connection losses with Wifi.
 
-*Bluetooth:*
+### Bluetooth:
 The Module cannot be connected to the Teensy as it is. You have to program it first, by using AT-Commands. Instructions on how to do this can be found all over the internet.
 
 you sould:
@@ -71,13 +69,21 @@ you sould:
 - set the bluetooth baudrate to "115200,0,0"
 - read out the modules MAC address and write it down (you need it later)
 
-*WiFi*
+### WiFi
 The Wifi module cannot be connected to the Teensy as it is. You have to program it first.
 
 - upload [this arduino application](/ESP-01 Webserver) to the module.
 - Instructions ob how to do this can be found all over the internet.
 
-# The pendant
+## How to: The pendant
+
+- get all the parts from the Bill of materials
+-
+
+
+... to be done ! ...
+
+
 
 - First: solder out pins from all modules to save space.
 - Place rotary encoder into the top side of the case and fix by tightening input
@@ -121,9 +127,12 @@ VCC & GND:
 
 ## Getting started!
 
-- Start bCNC (make sure, web-pendant is running (http://localhost:8080))
-- make sure, bCNC host computer is connected to a wifi network (with DHCP) (or set up an access point)
-- Switch on pendant
+- Start your grblHAL controller. A "Pendant" plugin should be named in your console window.
+- make sure if your bluetooth or wifi network is available
+- press "config" button and power cycle your pendant.
+- navigate to /connection
+
+
 - While starting, press rotary knob button to access config
 - Set wifi SSID and password, set bCNC host computers IP
 - You can also set values for probing and sleep time of the pendant
