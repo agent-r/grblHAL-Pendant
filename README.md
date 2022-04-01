@@ -27,7 +27,7 @@ Machine state and position are passed from grblHAL via a plugin to a HC-05-Bluet
 
 ## Bill of materials:
 
-for the electronic parts see also [pictures here](/Pictures).
+for the electronic parts see also [pictures here](/Pictures/BoM).
 
 - grblHAL controller, breakout board is optional but recommended:
   - (https://github.com/grblHAL)
@@ -40,27 +40,24 @@ for the electronic parts see also [pictures here](/Pictures).
   - 2.8" TFT Display
   - 12 Button KeyPad
   - Rotary encoder
-  - LiPo Battery
+  - LiPo Battery (to fit the case, it should be ??x??x??mm max)
   - Toggle Switch
   - PCB Board
-  - 3d-printed or milled pendant case
+  - 3d printed or milled case
   - Some screws (4pcs 2.2x6mm, 9pcs 2.2x16mm or similar)
-  - Labels for keypad ("MISC" folder)
+  - Labels for keypad ([MISC folder](/MISC))
   - Micro USB cable for charging
-  - Firmware
-  - you might have to install some arduino libraries (see .ino files)
+  - [Firmware](/src) and some [libraries](/lib)
 
 
 ## HowTo: The grblHAl controller side
-
-**The grblHAl controller side**
 
 To be able to connect the pendant to grblHAL (at least if you use a Teensy4.1), you have to add a Bluetooth or Wifi module to your controller.
 
 I recommend using Bluetooth (for example aHC-05 module), as I noticed some connection losses with Wifi.
 
 ### Bluetooth:
-The Module cannot be connected to the Teensy as it is. You have to program it first, by using AT-Commands. Instructions on how to do this can be found all over the internet.
+The Module cannot be connected to the Teensy as it is. You have to program it first, by using AT-Commands. Instructions on how to do this can be found [all over the internet](https://www.google.com/search?q=how+to+program+a+hc+05+bluetooth+module+using+at+commands).
 
 you sould:
 - give your bluetooth module a proper name (for example "grblHAL")
@@ -73,68 +70,24 @@ you sould:
 The Wifi module cannot be connected to the Teensy as it is. You have to program it first.
 
 - upload [this arduino application](/ESP-01 Webserver) to the module.
-- Instructions ob how to do this can be found all over the internet.
+- Instructions on how to do this can be found [all over the internet](https://www.google.com/search?q=how+to+upload+a+arduino+sketch).
 
 ## How to: The pendant
 
 - get all the parts from the Bill of materials
--
-
-
-... to be done ! ...
-
-
-
-- First: solder out pins from all modules to save space.
-- Place rotary encoder into the top side of the case and fix by tightening input
-- Place Buttons and TFT display in the top side of the Increase
-- place NodeMCU mount behind the TFT display
-- Screw NodeMCU onto that mount (2.2x6mm screws)
-
-**Soldering:**
-
-Rotary encoder:
-- NodeMCU D0   >   Rotary Encoder CLK
-- NodeMCU SD3  >   Rotary Encoder SW
-- NodeMCU D2   >   Rotary Encoder DT
-
-KeyPad:
-- NodeMCU A0   >   Key Pad SIG
-
-TFT:
-- NodeMCU D4   >   TFT DC
-- NodeMCU D5   >   TFT SCK
-- NodeMCU D6   >   TFT MISO
-- NodeMCU D7   >   TFT MOSI
-- NodeMCU D8   >   TFT CS
-- NodeMCU D1   >   TFT LED
-- NodeMCU 3.3V >   TFT RESET ?
-
-VCC & GND:
-- NodeMCU GND  >   all Modules GND
-- NodeMCU 3.3V >   all Modules VCC
-- NodeMCU VIN  >   Toggle Switch  >  9V Battery Connector (red)
-- NodeMCU GND  >   Toggle Switch  >  9V Battery Connector (black)
-
-
-**Finishing**
-
+- **... to be continued ! ...**
 - Close case using the 2.2x12mm screws
-- Put knob on rotary encoder
-
-
-
 
 ## How To: Getting started
 
-- Start your grblHAL controller. A "Pendant" plugin should be named in your console window.
+- Start your grblHAL controller. A **Pendant** plugin should be named in your console window.
 - make sure if your bluetooth or wifi network is available
-- press "config" button and power cycle your pendant.
-- navigate to > Connection > Connection Mode and select "Bluetooth" or "WiFi"
-- navigate to > Connection > Connection Settings
+- press **config** button and power cycle your pendant.
+- navigate to **> Connection > Connection Mode** and select **Bluetooth** or **WiFi**
+- navigate to **> Connection > Connection Settings**
     - if you are using wifi, set your SSID, Password, Host IP and port
     - if you are using bluetooth, set your Address and PIN (selecting slave by SSID does not work yet)
-- chekck, if you want to change any other settings like jog speed, probing, sleep time, brightness, etc.
+- check, if you want to change any other settings like jog speed, probing, sleep time, brightness, etc.
 - leave the config menu and have fun!
 
 
