@@ -4,7 +4,7 @@ This plugin adds support for a HC-05 bluetooth module or a ESP-01 wifi module (o
 
 It works with Teensy4.1, I use it with [this breakout board](https://github.com/phil-barrett/grblHAL-teensy-4.x). Other boards might as well work.
 
-------------------
+---
 
 ## Connecting:
 
@@ -20,7 +20,7 @@ It works with Teensy4.1, I use it with [this breakout board](https://github.com/
 - TX > RX
 - RX > TX
 
-------------------
+---
 
 ## Installation:
 
@@ -38,9 +38,6 @@ It works with Teensy4.1, I use it with [this breakout board](https://github.com/
         pendant_init();
     #endif
     ```
-    
+
 3. compile and upload to your controller
 4. Should work!
-
----
-2022-03-31

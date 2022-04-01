@@ -17,17 +17,13 @@ Machine state and position are passed from grblHAL via a plugin to a HC-05-Bluet
 - Battery powered, charged via usb
 - Control functions:
   - jogging (handwheel)
-  - goto Axis Zero
-  - set Axis Zero
-  - Probing Routine
+  - goto axis zero
+  - set axis zero
+  - Probing routine
   - Homing
   - Start
   - Stop/Hold
   - Unlock
-
-## The idea:
-
-
 
 ## Bill of materials:
 
@@ -55,9 +51,33 @@ for the electronic parts see also [pictures here](/Pictures).
   - you might have to install some arduino libraries (see .ino files)
 
 
-## Basic wiring:
+## HowTo:
 
-**Preparation**
+# The grblHAl controller side
+
+**The grblHAl controller side**
+
+To be able to connect the pendant to grblHAL (at least if you use a Teensy4.1), you have to add a Bluetooth or Wifi module to your controller.
+
+I recommend using Bluetooth (for example aHC-05 module), as I noticed some connection losses with Wifi.
+
+*Bluetooth:*
+The Module cannot be connected to the Teensy as it is. You have to program it first, by using AT-Commands. Instructions on how to do this can be found all over the internet.
+
+you sould:
+- give your bluetooth module a proper name (for example "grblHAL")
+- set the bluetooth module to "slave"
+- set the bluetooth password to a 4-digit number
+- set the bluetooth baudrate to "115200,0,0"
+- read out the modules MAC address and write it down (you need it later)
+
+*WiFi*
+The Wifi module cannot be connected to the Teensy as it is. You have to program it first.
+
+- upload [this arduino application](/ESP-01 Webserver) to the module.
+- Instructions ob how to do this can be found all over the internet.
+
+# The pendant
 
 - First: solder out pins from all modules to save space.
 - Place rotary encoder into the top side of the case and fix by tightening input
