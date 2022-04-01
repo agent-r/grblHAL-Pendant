@@ -24,8 +24,9 @@ It works with Teensy4.1, I use it with [this breakout board](https://github.com/
 
 ## Installation:
 
-1. copy the /pendant/ folder to your grblHAL folder.
+1. copy the /Pendant/ folder to your grblHAL folder.
 2. Then add the following lines to grblHAL:
+
     - my_machine.h:
     ```
     #define PENDANT_ENABLE 1
@@ -37,6 +38,7 @@ It works with Teensy4.1, I use it with [this breakout board](https://github.com/
         pendant_init();
     #endif
     ```
+    
 3. compile and upload to your controller
 4. Should work!
 
