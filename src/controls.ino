@@ -105,14 +105,18 @@ bool checkConfig() {
 
 ////////////////////////    BATTERY    ////////////////////////
 
+/*
+   void checkBattery() {
+        if (SERIAL_DEBUG) {Serial.println("Checking Battery..."); }
 
-void checkBattery() {
-        float battery_state = readBattery();
-        int battery_percentage = percentageBattery(battery_state);
-        String batteryMessage = "Battery: " + String(battery_state) + "V / " + String(battery_percentage) + "%";
-        if (battery_percentage < 25) { TFTPrint(MessageField, batteryMessage, TFT_COLOR_MSG_ERR); }
-        else { TFTPrint(MessageField, batteryMessage, TFT_COLOR_MSG_NRM); }
-}
+        // WHY IS THIS CAUSING TROUBLE ????
+        //   float battery_state = readBattery();
+        //   int battery_percentage = percentageBattery(battery_state);
+        //   String batteryMessage = "Battery: " + String(battery_state) + "V / " + String(battery_percentage) + "%";
+        //   if (battery_percentage < 25) { TFTPrint(MessageField, batteryMessage, TFT_COLOR_MSG_ERR); }
+        //   else { TFTPrint(MessageField, batteryMessage, TFT_COLOR_MSG_NRM); }
+   }
+ */
 
 float readBattery() {
         int batteryValue = analogRead(BATTERY_PIN);

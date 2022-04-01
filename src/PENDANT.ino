@@ -48,11 +48,11 @@
 // Needed for Bluetooth SSID-Search. This is not supported in official current arduino/platformio releases
 // comment out, if you use official releases.
 // you have to set BT-MAC-Address manually then.
-#define USE_NEW_ARDUINO_ESP 1
+// #define USE_NEW_ARDUINO_ESP 1
 
 // DEBUG
-static bool SERIAL_DEBUG = false;
-static bool SERIAL_DEBUG_IN = false;
+#define SERIAL_DEBUG 0
+#define SERIAL_DEBUG_IN 0
 
 
 // WiFi & WiFi-AP
@@ -138,8 +138,8 @@ int keypad_current;
 #define BATTERY_LOW 3.35
 #define BATTERY_HIGH 4.2
 #define BATTERYCHECK 60    // Seconds
-void checkBattery();
-TickTwo BatteryTicker(checkBattery, (1000 * BATTERYCHECK));
+// void checkBattery();
+// TickTwo BatteryTicker(checkBattery, (1000 * BATTERYCHECK));
 
 
 // SLEEP
@@ -158,7 +158,7 @@ uint64_t SleepPinMask = 0;
 // #define TFT_RST 4       // TO VCC !!!
 #define TFT_LED GPIO_NUM_17
 TFT_eSPI tft = TFT_eSPI();
-#define TFT_FPS 20
+#define TFT_FPS 10          // was 20
 void TFTUpdate();
 TickTwo TftTicker(TFTUpdate, (1000 / TFT_FPS));
 
@@ -195,7 +195,7 @@ bool blinker_change = true;
 void TFTMessage();
 TickTwo MessageTicker(TFTMessage, (1000 * MESSAGE));
 
-#define HOLD_TIME 2     // SECONDS from the last State. Or HOLD !!!
+#define HOLD_TIME 3     // SECONDS from the last State. Or HOLD !!!
 void Hold();
 TickTwo HoldTicker(Hold, (1000 * HOLD_TIME));
 bool hold = true;     // wait till connection is REALLY there !
@@ -331,7 +331,7 @@ void setup() {
         if (SleepTime > 0) { SleepTicker.start(); }
         KeypadTicker.start();
         EncoderTicker.start();
-        BatteryTicker.start();
+        // BatteryTicker.start();
         // BlinkTicker.start();
 
         if (checkConfig()) { config(); } // Start config routine
@@ -350,7 +350,7 @@ void loop() {
         TftTicker.update();
         EncoderTicker.update();
         KeypadTicker.update();
-        BatteryTicker.update();
+        // BatteryTicker.update();
         // BlinkTicker.update();  // used only within config-loops
         MessageTicker.update();
         SleepTicker.update();

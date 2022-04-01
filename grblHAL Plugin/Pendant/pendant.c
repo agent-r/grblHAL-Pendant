@@ -1,5 +1,6 @@
 /*
-   TODO:
+   TODO:    HOMING AT STARTUP ???
+            Strange behavior with o or O - characters ???
 
  */
 
@@ -22,7 +23,8 @@ static on_state_change_ptr on_state_change;
 #define MAX_CMD_SIZE 32
 #define MAX_TOKEN_STRING MAX_CMD_SIZE
 
-#define fps 5                               // position and state updates per second
+#define fps 10                               // position and state updates per second
+#define slow_sending_fps fps / 2            // => 2 continous sends per second
 #define loopTicks 1000 / fps
 #define pendant_debug_in 0                 // debug inputs and outputs
 #define pendant_debug_in_raw 0
@@ -170,13 +172,27 @@ static void pendant_update (sys_state_t state)
                         }
                 }
 
+
                 // get new position and compare to old position
                 static int32_t int_pos[N_AXIS];
-                static int32_t int_old_pos[N_AXIS];
+                // static int32_t int_old_pos[N_AXIS];
                 static float float_pos[N_AXIS];
+                static float float_pos_old[N_AXIS];
                 static float wco[N_AXIS];
+
                 memcpy(int_pos, sys.position, sizeof(sys.position));
-                if (memcmp(int_pos, int_old_pos, sizeof(int_pos)) != 0) {
+                system_convert_array_steps_to_mpos(float_pos, int_pos);
+                for (int i = 0; i < N_AXIS; i++) {
+                        wco[i] = gc_get_offset(i);
+                        float_pos[i] -= wco[i];
+                }
+
+                if (memcmp(float_pos, float_pos_old, sizeof(float_pos)) != 0) {
+                        position_has_changed = true;
+                        memcpy(float_pos_old, float_pos, sizeof(float_pos));
+                }
+                /*
+                   if (memcmp(int_pos, int_old_pos, sizeof(int_pos)) != 0) {
                         system_convert_array_steps_to_mpos(float_pos, int_pos);
                         for (int i = 0; i < N_AXIS; i++) {
                                 wco[i] = gc_get_offset(i);
@@ -184,8 +200,8 @@ static void pendant_update (sys_state_t state)
                                 int_old_pos[i] = int_pos[i];
                         }
                         position_has_changed = true;
-                }
-
+                   }
+                 */
                 // prepare JSON tring for Sending
                 static char wifi_out_buffer[OUTBUF_SIZE];
                 if (position_has_changed || state_has_changed) {
@@ -204,7 +220,7 @@ static void pendant_update (sys_state_t state)
 
                 // increase once-per-second counter or reset counter if second is full
                 send_counter++;
-                if (send_counter >= fps) { send_counter = 0; }
+                if (send_counter >= slow_sending_fps) { send_counter = 0; }
 
 
                 /////////////   RECEIVE COMMANDS   //////////////

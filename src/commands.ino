@@ -70,7 +70,8 @@ void probeZ() {
 void homeAll() {
         TFTPrint(MessageField, "Confirm HOME ?", TFT_COLOR_MSG_ERR);
         if (checkEnterConfirm()) {
-                sendCmd("gcode", "$H", "HOME ALL");
+                // sendCmd("gcode", "$H", "HOME ALL");
+                sendCmd("cmd", "HOME", "HOME ALL");
                 return;
         }
         TFTPrint(MessageField, "", TFT_COLOR_MSG_NRM);

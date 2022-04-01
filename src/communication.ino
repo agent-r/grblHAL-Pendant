@@ -6,6 +6,8 @@
 void ConnectionSetup() {
         // bool connected;
 
+        if (SERIAL_DEBUG) { Serial.println("Setting up Connection..."); }
+
         switch(ConnectionMode) {
         case 0:                         // WIFI SLAVE
                 btSerial.end();
@@ -26,6 +28,7 @@ void ConnectionSetup() {
 
 
 bool Connect() {
+
         switch (ConnectionMode) {
         case 0:
                 if (ConnectWifi()) {

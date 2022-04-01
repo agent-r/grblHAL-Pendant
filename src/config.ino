@@ -267,9 +267,9 @@ void configBluetoothAddress() {
                                         Serial.print("Bluetooth Host: ");
                                         sprintf(strAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BluetoothHost[0],BluetoothHost[1],BluetoothHost[2],BluetoothHost[3],BluetoothHost[4],BluetoothHost[5]);
                                         Serial.println(strAddress);
+                                        Serial.println();
                                 }
                                 EEPROM.commit();
-                                Serial.println();
                                 return;
                         }
 
@@ -362,36 +362,44 @@ void configBluetoothSSID() {
         TFTConfigPrepare();
         TFTConfigPrint(0, "Bluetooth SSID", TFT_COLOR_CNF_STD);
         TFTSetFontSize(2);
-        btSerial.disconnect();
-        btSerial.end();
-        btSerial.begin("BTMaster", true);      // true = master
-        delay(100);
+        // btSerial.disconnect();
+        // btSerial.end();
+        // btSerial.begin("BTMaster", true);      // true = master
+        // delay(100);
 
         TFTConfigPrint(1, "> ", TFT_COLOR_CNF_STD);
         TFTConfigPrint(11, "  Back", TFT_COLOR_CNF_STD);
 
         if (btSerial.discoverAsync(configBluetoothDeviceFound)) {
-                Serial.println("Start Search");
+                if (SERIAL_DEBUG) { Serial.println("Start to look for BT devices..."); }
         } else {
-                Serial.println("Error on discoverAsync f.e. not workin after a \"connect\"");
+                if (SERIAL_DEBUG) { Serial.println("Error on discoverAsync f.e. not workin after a \"connect\""); }
         }
 
         while (true) {
                 if (BluetoothSSIDFound) {
+                        if (SERIAL_DEBUG) { Serial.println("... found something !"); }
                         if (BluetoothSSIDNameList[BluetoothSSIDNum] != "") {
+                                if (SERIAL_DEBUG) {
+                                        Serial.print("... it has a name :");
+                                        Serial.println(BluetoothSSIDNameList[BluetoothSSIDNum]);
+                                }
                                 TFTConfigPrint(BluetoothSSIDNum+1, BluetoothSSIDNameList[BluetoothSSIDNum], TFT_COLOR_CNF_STD);
                         }
                         else {
+
                                 sprintf(strAddress,"  %02x:%02x:%02x:%02x:%02x:%02x",BluetoothAddressList[BluetoothSSIDNum][0],BluetoothAddressList[BluetoothSSIDNum][1],BluetoothAddressList[BluetoothSSIDNum][2],BluetoothAddressList[BluetoothSSIDNum][3],BluetoothAddressList[BluetoothSSIDNum][4],BluetoothAddressList[BluetoothSSIDNum][5]);
+                                if (SERIAL_DEBUG) {
+                                        Serial.print("... it has a number :");
+                                        Serial.println(strAddress);
+                                }
                                 TFTConfigPrint(BluetoothSSIDNum+1, strAddress, TFT_COLOR_CNF_STD);
                                 // TFTConfigPrint(BluetoothSSIDNum+1, String(BluetoothAddressListString[BluetoothSSIDNum]), TFT_COLOR_CNF_STD);
                         }
                         BluetoothSSIDFound = false;
                 }
 
-                // int count = rotaryEncoder.getCount();
                 int count = rotaryEncoder.readEncoder();
-                // rotaryEncoder.clearCount();
                 rotaryEncoder.reset();
 
                 if ((count != 0) || BluetoothSSIDFound) {
@@ -400,11 +408,11 @@ void configBluetoothSSID() {
                                 TFTConfigPrint(i+1, "  " + BluetoothSSIDNameList[i], TFT_COLOR_CNF_STD);
                         }
                         // TFTConfigPrint(activeMenu, "  " + Content[activeMenu], TFT_COLOR_CNF_STD);
-                        // activeMenu = activeMenu + count;
+                        activeMenu = activeMenu + count;
                         // if (activeMenu > (Length - 1)) {activeMenu = 1;}
                         // if (activeMenu < 1) {activeMenu = (Length - 1);}
                         // TFTConfigPrint(activeMenu, "> " + Content[activeMenu], TFT_COLOR_CNF_STD);
-                        TFTConfigPrint(BluetoothSSIDNum+1, "  Back", TFT_COLOR_CNF_STD);
+                        TFTConfigPrint(BluetoothSSIDNum+2, "  Back", TFT_COLOR_CNF_STD);
 
                         // rotaryEncoder.clearCount();
                         rotaryEncoder.reset();
