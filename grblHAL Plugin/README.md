@@ -24,7 +24,7 @@ It works with Teensy4.1, I use it with [this breakout board](https://github.com/
 
 ## Installation:
 
-1. copy pendant.h and pendant.c to a /pendant/ subfolder of your grblHAL folder.
+1. copy the /pendant/ folder to your grblHAL folder.
 2. Then add the following lines to grblHAL:
     - my_machine.h:
     ```

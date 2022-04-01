@@ -1,22 +1,22 @@
 # grblHAL Pendant
 
-(This project is work in progress)
+(This project is working but still a bit work in progress)
 
-I am using a WeMos Lolin32 to build a Pendant for grblHAL.
+I am using a WeMos Lolin32 microcontroller board to build a pendant for [grblHAL](https://github.com/grblHAL).
 
-Machine state and position are passed from grblHAL via a plugin to a Esp01-Wifi-Module or a HC-05-Bluetooth-Module. The Pendant connects to one of these modules, receives this data and shows it on a tft display. 12 Buttons and a handwheel are there to send commands to the machine.
+Machine state and position are passed from grblHAL via a plugin to a HC-05-Bluetooth-Module (recommended) or a Esp01-Wifi-Module. The Pendant connects to one of these modules, receives this data and shows it on a tft display. 12 Buttons and a handwheel are there to send commands to the machine.
 
 ![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
-## Basic Functions:
+## Basic functions:
 
 - CNC pendant for up to 4 axis
 - Rotary encoder and 12 buttons
 - TFT display showing position and machine state
-- Wireless connection (Bluetooth or WiFi)
-- Battery powered
-- Functions:
-  - jogging (jandwheel)
+- Wireless connection (bluetooth or WiFi)
+- Battery powered, charged via usb
+- Control functions:
+  - jogging (handwheel)
   - goto Axis Zero
   - set Axis Zero
   - Probing Routine
@@ -25,46 +25,37 @@ Machine state and position are passed from grblHAL via a plugin to a Esp01-Wifi-
   - Stop/Hold
   - Unlock
 
-  ![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
+## The idea:
 
-## What you need:
 
-- grblHAL breakout board + Firmware:
+
+## Bill of materials:
+
+for the electronic parts see also [pictures here](/Pictures).
+
+- grblHAL controller, breakout board is optional but recommended:
   - (https://github.com/grblHAL)
   - (https://github.com/phil-barrett/grblHAL-teensy-4.x)
   - (https://www.tindie.com/products/philba/grblhal-bob-unkit-for-teensy-41-t41u5xbb/)
-- WiFi-Plugin for grblHAL
-- Esp01 (as WiFi AccessPoint for grblHAL) + Firmware
-- Pendant + Firmware
+- [Plugin for grblHAL](/grblHAL Plugin)
+- Bluetooth (recommended) or WiFi module for the grblHAL side
+- Pendant
   - WeMos Lolin32
-  - TFT Display
+  - 2.8" TFT Display
   - 12 Button KeyPad
   - Rotary encoder
   - LiPo Battery
+  - Toggle Switch
   - PCB Board
+  - 3d-printed or milled pendant case
+  - Some screws (4pcs 2.2x6mm, 9pcs 2.2x16mm or similar)
+  - Labels for keypad ("MISC" folder)
+  - Micro USB cable for charging
+  - Firmware
+  - you might have to install some arduino libraries (see .ino files)
 
 
-## Bill of Materials (see pictures in "Pictures" folder):
-
-- Esp01 Module
-- WeMos Lolin32 Module
-- 2.8" TFT display
-- 3x4 key pad
-- Rotary Encoder
-
-- Toggle Switch MTS-203-A1 (or similar)
-
-- LiPo Battery
-
-- 3d-printed case, NodeMCU mount and spinner knob (see: "MISC" folder)
-- Some screws (4pcs 2.2x6mm, 9pcs 2.2x16mm or similar)
-- Labels for keypad ("MISC" folder)
-- Micro USB cable for charging
-
-- you might have to install some arduino libraries (see .ino files)
-
-
-## Basic wireing:
+## Basic wiring:
 
 **Preparation**
 
