@@ -1,6 +1,6 @@
 # grblHAL pendant plugin
 
-This plugin adds support for a HC-05 bluetooth module or a ESP-01 wifi module (or any other serial-connected board) to grblHAL.
+This plugin adds support for a HC-05 bluetooth module or a ESP-01 wifi module (or any other serial-connected board) to [grblHAL](https://github.com/grblHAL).
 
 It works with Teensy4.1, I use it with [this breakout board](https://github.com/phil-barrett/grblHAL-teensy-4.x). Other boards might as well work.
 
