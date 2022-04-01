@@ -125,25 +125,26 @@ VCC & GND:
 
 
 
-## Getting started!
+## How To: Getting started
 
 - Start your grblHAL controller. A "Pendant" plugin should be named in your console window.
 - make sure if your bluetooth or wifi network is available
 - press "config" button and power cycle your pendant.
-- navigate to /connection
+- navigate to > Connection > Connection Mode and select "Bluetooth" or "WiFi"
+- navigate to > Connection > Connection Settings
+    - if you are using wifi, set your SSID, Password, Host IP and port
+    - if you are using bluetooth, set your Address and PIN (selecting slave by SSID does not work yet)
+- chekck, if you want to change any other settings like jog speed, probing, sleep time, brightness, etc.
+- leave the config menu and have fun!
 
 
-- While starting, press rotary knob button to access config
-- Set wifi SSID and password, set bCNC host computers IP
-- You can also set values for probing and sleep time of the pendant
+## How to: Use
 
-## How to use?
-
-- Set your active axis by pressing one of  the "Set" buttons
-- Jog in active axis by turning rotary knob left/right
-- Set current Position as WPOS zero by pressing rotary knob
-- Go to (active axis) zero by pressing the "GoTo" button
-- Increase/decrease joffing factor by pressing F+/F-
-- Start probing routine by pressing "probe" Button
-- Start, stop, home or reset/unlock by pressing the buttons (some have to be confirmed by pressing rotary knob)
-- Change config by pressing "Config" button
+- Set your active axis by pressing one of the **Set** buttons
+- Jog in active axis by turning **rotary knob** left/right
+- Set current Position on active axis as WPOS zero by pressing **Set 0**
+- Go to active axis zero by pressing **GoTo 0**
+- Increase/decrease jogging distance by pressing **F+/F-**
+- Start probing routine by pressing **Probe**
+- **Start, stop, home or reset/unlock** by pressing the buttons (some have to be confirmed by pressing **Enter**)
+- Change settings by pressing **Config**
