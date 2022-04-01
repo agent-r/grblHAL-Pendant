@@ -1,31 +1,44 @@
 ## grblHAL pendant plugin
 
-This plugin adds support for a HC-05 Bluetooth module or a ESP01-Wifi module to grblHAL
+This plugin adds support for a HC-05 bluetooth module or a ESP-01 wifi module to grblHAL.
 
-It works with Teensy4.1, I use it with THIS breakout board.
-
-Connect:
-
-- GND > GND
-- 5V > 3.3V (works!)
-- RX > TX
-- TX > RX
-
-Add the follwoing lines to grblHAL:
-
-my_machine.h
+It works with Teensy4.1, I use it with [this breakout board](https://github.com/phil-barrett/grblHAL-teensy-4.x). Other boards might as well work.
 ------------------
-#define PENDANT_ENABLE 1
 
+Connecting to Teensy4.1:
+- 5V > 3.3V (works!)
+- GND > GND
+- TX > Pin 0
+- RX > Pin 1
+
+Connecting to BOB:
+- 5V > 5V
+- GND > GND
+- TX > RX
+- RX > TX
+
+------------------
+
+Installation:
+
+1) copy pendant.h and pendant.c to a /pendant/ subfolder of your grblHAL folder.
+
+2) Then add the following lines to grblHAL:
+
+my_machine.h:
+```
+#define PENDANT_ENABLE 1
+```
 
 grbl/plugins_init.h
--------------------
+```
 #if PENDANT_ENABLE
     extern void pendant_init (void);
     pendant_init();
 #endif
+```
 
-
+3) Should work!
 
 ---
-2021-06-27
+2022-03-31
