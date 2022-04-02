@@ -4,7 +4,7 @@
 
 I am using a WeMos Lolin32 microcontroller board to build a pendant for [grblHAL](https://github.com/grblHAL).
 
-Machine state and position are passed from grblHAL via a plugin to a HC-05-Bluetooth-Module (recommended) or a Esp01-Wifi-Module. The Pendant connects to one of these modules, receives this data and shows it on a tft display. 12 Buttons and a handwheel are there to send commands to the machine.
+Machine state and position are passed from grblHAL via a plugin to a HC-05-Bluetooth-Module or a Esp01-Wifi-Module. The Pendant connects to one of these modules, receives this data and shows it on a tft display. 12 Buttons and a handwheel are there to send commands to the machine.
 
 ![bCNC Pendant](/Pictures/bCNC-pendant.jpg)
 
@@ -54,7 +54,7 @@ for the electronic parts see also [pictures here](/Pictures/BoM).
 
 To be able to connect the pendant to grblHAL (at least if you use a Teensy4.1), you have to add a Bluetooth or Wifi module to your controller.
 
-I recommend using Bluetooth (for example aHC-05 module), as I noticed some connection losses with Wifi.
+I recommend using WiFi (for example a ESP01 module), as I noticed some connection losses with bluetooth.
 
 ### Bluetooth:
 The Module cannot be connected to the Teensy as it is. You have to program it first, by using AT-Commands. Instructions on how to do this can be found [all over the internet](https://www.google.com/search?q=how+to+program+a+hc+05+bluetooth+module+using+at+commands).
@@ -70,7 +70,8 @@ you sould:
 The Wifi module cannot be connected to the Teensy as it is. You have to program it first.
 
 - upload [this arduino application](/ESP-01 Webserver) to the module.
-- Instructions on how to do this can be found [all over the internet](https://www.google.com/search?q=how+to+upload+a+arduino+sketch).
+- Instructions on how to do this can be found [all over the internet](https://www.google.com/search?q=how+to+upload+an+arduino+sketch).
+- once programmed via usb you can update the module also via OTA. Instructions on how to do this can be found [all over the internet](https://www.google.com/search?q=how+to+upload+an+arduino+sketch+OTA).
 
 ## How to: The pendant
 
@@ -81,7 +82,7 @@ The Wifi module cannot be connected to the Teensy as it is. You have to program 
 ## How To: Getting started
 
 - Start your grblHAL controller. A **Pendant** plugin should be named in your console window.
-- make sure if your bluetooth or wifi network is available
+- check if your bluetooth or wifi network is available
 - press **config** button and power cycle your pendant.
 - navigate to **> Connection > Connection Mode** and select **Bluetooth** or **WiFi**
 - navigate to **> Connection > Connection Settings**
