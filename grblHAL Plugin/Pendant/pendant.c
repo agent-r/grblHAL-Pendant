@@ -1,7 +1,7 @@
 /*
-   TODO:    HOMING AT STARTUP ???
-            Strange behavior with o or O - characters ???
-
+   TODO:    Strange behavior with o or O - characters ???
+            Strange behavior when STOP
+            Strange behavior
  */
 
 #include "grbl/hal.h"
@@ -11,6 +11,7 @@
 // #include <ctype.h>
 #include <string.h>
 #include "pendant.h"
+#include "networking/cJSON.h"
 
 static io_stream_t pendant_serial;
 static on_report_options_ptr on_report_options;
@@ -20,114 +21,97 @@ static on_state_change_ptr on_state_change;
 #define INBUF_SIZE 50
 #define OUTBUF_SIZE 100
 #define STATEBUF_SIZE 16
-#define MAX_CMD_SIZE 32
-#define MAX_TOKEN_STRING MAX_CMD_SIZE
 
 #define fps 10                               // position and state updates per second
-#define slow_sending_fps fps / 2            // => 2 continous sends per second
+#define slow_sending_fps fps                 // => (fps / 2) => 2 sends per second
 #define loopTicks 1000 / fps
-#define pendant_debug_in 0                 // debug inputs and outputs
+
+#define pendant_debug_in 1                   // debug inputs and outputs
 #define pendant_debug_in_raw 0
 #define pendant_debug_out 0
-
 
 static bool state_has_changed = true;       // state and position change flags
 static bool position_has_changed = true;
 
+const char StateStrings[12][STATEBUF_SIZE] = {
+        "Idle",
+        "Run",
+        "Hold",
+        "Jog",
+        "Home",
+        "EndStop",
+        "Alarm",
+        "Check",
+        "Door",
+        "Sleep",
+        "Tool",
+        "N/A"
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-// parse json strings
-static bool pendant_json_lookup(const char* cSource, const char* cToken, char cReply[]){
-        char *ptr;
-        ptr = strstr(cSource, cToken);
-        if (!ptr) { return false; }
-        ptr = strstr(ptr, ":");
-        if (!ptr) { return false; }
+static void pendant_parse_and_send_cmd(const char * const cmd_buffer) {
 
-        ptr++;
-        int quotMarkDepth = 0;
-        char lastQuotMark = '\0';
+        const cJSON *js_cmd = NULL;
+        const cJSON *cmd_json = cJSON_Parse(cmd_buffer);
 
-        for(; (*ptr == ' ' || *ptr == '"' || *ptr == '\'' || *ptr == '\t') && !quotMarkDepth; ptr++) {
-                if(*ptr == '"' || *ptr == '\'') {
-                        lastQuotMark = *ptr;
-                        ++quotMarkDepth;
-                }
-        }
-        for (int i=0, x=0; i<MAX_TOKEN_STRING+1; i++, ptr++) {
-                switch(*ptr) {
-                case '\0':
-                case '}':
-                case ',':
-                        i = MAX_TOKEN_STRING+1;
-                        break;
-                case '\'':
-                case '"':
-                        if(lastQuotMark == '\0') {
-                                cReply[x ] = *ptr;
-                                x++;
+        const char SysExecuteCommand[257];  // is this neccessary?
+
+        if (cJSON_HasObjectItem(cmd_json,"cmd")) {
+                js_cmd = cJSON_GetObjectItemCaseSensitive(cmd_json,"cmd");
+                if (cJSON_IsString(js_cmd) && (js_cmd->valuestring != NULL))
+                {
+                        const char * str_cmd = js_cmd->valuestring;
+                        if (pendant_debug_in) {hal.stream.write("CMD:"); hal.stream.write(str_cmd); hal.stream.write(ASCII_EOL);}
+
+                        if (strcmp(str_cmd, "START") == 0)
+                        {
+                                grbl.enqueue_realtime_command(CMD_CYCLE_START);
                         }
-                        else{
-                                if(*ptr == lastQuotMark) {
-                                        lastQuotMark = lastQuotMark == '"' ? '\'' : '"';
-                                        --quotMarkDepth;
-                                        if(quotMarkDepth) {
-                                                cReply[x ] = *ptr;
-                                                x++;
-                                        }
-                                        else{
-                                                i = MAX_TOKEN_STRING+1;
-                                        }
-                                }
-                                else{
-                                        lastQuotMark = *ptr;
-                                        ++quotMarkDepth;
-                                }
+                        else if (strcmp(str_cmd, "STOP") == 0)
+                        {
+                                // grbl.enqueue_realtime_command(CMD_JOG_CANCEL);
+                                grbl.enqueue_realtime_command(CMD_STOP);
+                                // strcpy(SysExecuteCommand, "");
+                                // system_execute_line(SysExecuteCommand);     // must be at least "LINE_BUFFER_SIZE" long ???
                         }
-                        break;
-                default:
-                        cReply[x ] = *ptr;
-                        x++;
-                }
-                cReply[x] = '\0';
-        }
-        return true;
-}
-
-
-///////////////////////////////////////////////////////////////////////////////////
-
-static void pendant_parse_and_send_cmd(const char buffer[INBUF_SIZE]) {
-        char command[MAX_CMD_SIZE];
-        // TEST: {"gcode":"G0X0Y0Z0A0"}
-        if (pendant_json_lookup(buffer, "gcode", command)) {
-                if (pendant_debug_in) {
-                        hal.stream.write("GCODE:"); hal.stream.write(command); hal.stream.write(ASCII_EOL);
-                }
-                grbl.enqueue_gcode(command);
-        }
-        // TEST: {"cmd":"START"}
-        else if (pendant_json_lookup(buffer, "cmd", command)) {
-                if (pendant_debug_in) {hal.stream.write("CMD:"); hal.stream.write(command); hal.stream.write(ASCII_EOL);}
-
-                if (strcmp(command, "START") == 0)
-                {
-                        grbl.enqueue_realtime_command(CMD_CYCLE_START);
-                }
-                else if (strcmp(command, "STOP") == 0)
-                {
-                        grbl.enqueue_realtime_command(CMD_JOG_CANCEL);
-                        grbl.enqueue_realtime_command(CMD_STOP);
-                }
-                else if (strcmp(command, "UNLOCK") == 0)
-                {
-                        system_execute_line("$X");
+                        else if (strcmp(str_cmd, "HOME") == 0)
+                        {
+                                strcpy(SysExecuteCommand, "$H");
+                                system_execute_line(SysExecuteCommand);     // must be at least "LINE_BUFFER_SIZE" long ???
+                                // system_execute_line("$H");
+                        }
+                        else if (strcmp(str_cmd, "UNLOCK") == 0)
+                        {
+                                // system_execute_line("$X");
+                                strcpy(SysExecuteCommand, "$X");
+                                system_execute_line(SysExecuteCommand);     // must be at least "LINE_BUFFER_SIZE" long ???
+                        }
                 }
         }
-        // TEST: {"msg":"test"}
-        else if (pendant_json_lookup(buffer, "msg", command)) {
-                hal.stream.write(command); {hal.stream.write(ASCII_EOL);}
+
+        if (cJSON_HasObjectItem(cmd_json,"gcode")) {
+                js_cmd = cJSON_GetObjectItemCaseSensitive(cmd_json,"gcode");
+
+                if (cJSON_IsString(js_cmd) && (js_cmd->valuestring != NULL))
+                {
+                        const char * str_gcode = js_cmd->valuestring;
+                        if (pendant_debug_in) {
+                                hal.stream.write("GCODE:"); hal.stream.write(str_gcode); hal.stream.write(ASCII_EOL);
+                        }
+                        grbl.enqueue_gcode(str_gcode);
+                }
+        }
+
+        if (cJSON_HasObjectItem(cmd_json,"msg")) {
+                js_cmd = cJSON_GetObjectItemCaseSensitive(cmd_json,"msg");
+
+                if (cJSON_IsString(js_cmd) && (js_cmd->valuestring != NULL))
+                {
+                        const char * str_msg = js_cmd->valuestring;
+                        hal.stream.write(str_msg); {hal.stream.write(ASCII_EOL);}
+                }
         }
 }
 
@@ -136,46 +120,44 @@ static void pendant_update (sys_state_t state)
 {
         static uint32_t ms = 0;
         static int send_counter = 0;
+        static byte state_number;
 
         // check, if it is time to update. Always update on state change.
         if((hal.get_elapsed_ticks() >= ms) || state_has_changed) {
                 ms = hal.get_elapsed_ticks() + loopTicks; //ms
 
-                // if state has changed, update State-String
-                static char string_state[STATEBUF_SIZE];
+                // if state has changed, update State-Number
                 if (state_has_changed) {
                         switch (state) {
                         case STATE_IDLE:
-                                strcpy(string_state, "Idle"); break;
+                                state_number = 0; break;
                         case STATE_CYCLE:
-                                strcpy(string_state, "Run"); break;
+                                state_number = 1; break;
                         case STATE_HOLD:
-                                strcpy(string_state, "Hold"); break;
+                                state_number = 2; break;
                         case STATE_JOG:
-                                strcpy(string_state, "Jog"); break;
+                                state_number = 3; break;
                         case STATE_HOMING:
-                                strcpy(string_state, "Home"); break;
+                                state_number = 4; break;
                         case STATE_ESTOP:
-                                strcpy(string_state, "EndStop"); break;
+                                state_number = 5; break;
                         case STATE_ALARM:
-                                strcpy(string_state, "Alarm"); break;
+                                state_number = 6; break;
                         case STATE_CHECK_MODE:
-                                strcpy(string_state, "Check"); break;
+                                state_number = 7; break;
                         case STATE_SAFETY_DOOR:
-                                strcpy(string_state, "Door"); break;
+                                state_number = 8; break;
                         case STATE_SLEEP:
-                                strcpy(string_state, "Sleep"); break;
+                                state_number = 9; break;
                         case STATE_TOOL_CHANGE:
-                                strcpy(string_state, "Tool"); break;
+                                state_number = 10; break;
                         default:
-                                strcpy(string_state, "N/A"); break;
+                                state_number = 11; break;
                         }
                 }
 
-
                 // get new position and compare to old position
                 static int32_t int_pos[N_AXIS];
-                // static int32_t int_old_pos[N_AXIS];
                 static float float_pos[N_AXIS];
                 static float float_pos_old[N_AXIS];
                 static float wco[N_AXIS];
@@ -191,23 +173,13 @@ static void pendant_update (sys_state_t state)
                         position_has_changed = true;
                         memcpy(float_pos_old, float_pos, sizeof(float_pos));
                 }
-                /*
-                   if (memcmp(int_pos, int_old_pos, sizeof(int_pos)) != 0) {
-                        system_convert_array_steps_to_mpos(float_pos, int_pos);
-                        for (int i = 0; i < N_AXIS; i++) {
-                                wco[i] = gc_get_offset(i);
-                                float_pos[i] -= wco[i];
-                                int_old_pos[i] = int_pos[i];
-                        }
-                        position_has_changed = true;
-                   }
-                 */
-                // prepare JSON tring for Sending
+
+                // prepare JSON String for Sending
                 static char wifi_out_buffer[OUTBUF_SIZE];
                 if (position_has_changed || state_has_changed) {
-                        if (N_AXIS == 3) { sprintf(wifi_out_buffer, "{\"state\":\"%s\",\"wx\":%.3f,\"wy\":%.3f,\"wz\":%.3f}"ASCII_EOL, string_state, float_pos[0], float_pos[1], float_pos[2]); }
-                        else if (N_AXIS == 4) { sprintf(wifi_out_buffer, "{\"state\":\"%s\",\"wx\":%.3f,\"wy\":%.3f,\"wz\":%.3f,\"wa\":%.3f}"ASCII_EOL, string_state, float_pos[0], float_pos[1], float_pos[2], float_pos[3]); }
-                        else if (N_AXIS == 5) { sprintf(wifi_out_buffer, "{\"state\":\"%s\",\"wx\":%.3f,\"wy\":%.3f,\"wz\":%.3f,\"wa\":%.3f,\"wb\":%.3f}"ASCII_EOL, string_state, float_pos[0], float_pos[1], float_pos[2], float_pos[3], float_pos[4]); }
+                        if (N_AXIS == 3) { sprintf(wifi_out_buffer, "{\"state\":\"%s\",\"wx\":%.3f,\"wy\":%.3f,\"wz\":%.3f}", StateStrings[state_number], float_pos[0], float_pos[1], float_pos[2]); }
+                        else if (N_AXIS == 4) { sprintf(wifi_out_buffer, "{\"state\":\"%s\",\"wx\":%.3f,\"wy\":%.3f,\"wz\":%.3f,\"wa\":%.3f}", StateStrings[state_number], float_pos[0], float_pos[1], float_pos[2], float_pos[3]); }
+                        // else if (N_AXIS == 5) { sprintf(wifi_out_buffer, "{\"state\":\"%s\",\"wx\":%.3f,\"wy\":%.3f,\"wz\":%.3f,\"wa\":%.3f,\"wb\":%.3f}"ASCII_EOL, string_state, float_pos[0], float_pos[1], float_pos[2], float_pos[3], float_pos[4]); }
                 }
 
                 // send JSON string only on state change or once per second
@@ -262,7 +234,7 @@ static void pendant_update (sys_state_t state)
         on_execute_realtime(state);
 }
 
-//report if state has changed
+// report if state has changed (some states show up for only very short time - needed for probing-alarms)
 static void state_changed(sys_state_t state) {
         state_has_changed = true;
         if(on_state_change) { on_state_change(state); }

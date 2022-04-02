@@ -9,6 +9,8 @@
 //   TODO:  -> Multi-Char Numbers in Config (BT Address, BT Pin, hosts) (sprintf ??)
 //          -> More
 //          -> OTA-Uploads ?
+//          -> Get BT running
+//          ->
 //
 /////////////////////////////////////////
 
@@ -54,9 +56,8 @@
 // #define USE_NEW_ARDUINO_ESP 1
 
 // DEBUG
-#define SERIAL_DEBUG 1
-#define SERIAL_DEBUG_IN 1
-
+#define SERIAL_DEBUG 0
+#define SERIAL_DEBUG_IN 0
 
 // WiFi & WiFi-AP
 byte ConnectionMode = 0; // 0 = WIFI SLAVE    1 = WIFI AP    2 = BLUETOOTH SLAVE

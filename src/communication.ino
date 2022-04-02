@@ -201,11 +201,13 @@ void getState() {
                         // TCPClient.connect(WifiHost, WifiPort);
 
                         while (TCPClient.available() > 0) {
-                                if (TCPClient.available() > 400) {
+                                if (TCPClient.available() > 200) {
+                                        if (SERIAL_DEBUG_IN) { Serial.println("WARNING: INBUFFER OVERFLOW");}
                                         while(TCPClient.available()) {
                                                 TCPClient.read();
                                         }
-                                        if (SERIAL_DEBUG_IN) { Serial.println("WARNING: INBUFFER OVERFLOW");}
+                                        if (SERIAL_DEBUG_IN) { Serial.println("WARNING: OVERFLOW DELETED");}
+                                        return;
                                 }
 
                                 buffer_char = TCPClient.read();
