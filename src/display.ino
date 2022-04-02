@@ -79,14 +79,18 @@ void TFTSleep() {
         // Turn off TFT
         analogWrite(TFT_LED, 0);
         tft.fillRect(0,0,240,320, ILI9341_WHITE);
-        // Stop WIFI & Bluetooth
-        adc_power_off();
+        // Stop WIFI
+        TCPClient.stop();
         WiFi.disconnect(true);
         WiFi.mode(WIFI_OFF);
         esp_wifi_stop();
+        adc_power_off();
+        // Stop Bluetooth
         btSerial.end();
         esp_bt_controller_disable();
         esp_bt_controller_deinit();
+        // wait a moment for connections to close...
+        delay(1000);
         // Set Wakeup Pins
         bitSet64(SleepPinMask, ROTARY_ENCODER_A_PIN);
         bitSet64(SleepPinMask, ROTARY_ENCODER_B_PIN);

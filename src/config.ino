@@ -24,7 +24,7 @@ const int ConfigFields[12][5] = {
 
 
 void config() {
-        const byte ContentNum = 10;
+        const byte ContentNum = 11;
         const String Content[ContentNum] = {
                 "Config",
                 "Connection",
@@ -35,6 +35,7 @@ void config() {
                 "Brightness",
                 "Battery",
                 "Info",
+                "Firmware Update",
                 "Exit"
         };
         while(true) {
@@ -47,7 +48,8 @@ void config() {
                 case 6: configBrightness(); break;
                 case 7: configBattery(); break;
                 case 8: configInfo(); break;
-                case 9: TFTPrepare(); ConnectionSetup(); return;
+                case 9: configOTA(); break;
+                case 10: TFTPrepare(); ConnectionSetup(); return;
                 }
         }
 }
@@ -628,4 +630,49 @@ void configInfo() {
                 "Back"
         };
         TFTConfigInfo(Content, ContentNum);
+}
+
+
+void configOTA() {
+        const char * otassid = "OTA";       // You will connect your penant to this Access Point
+        const char * otapw = "OTAOTA00";        // and this is the password
+        const IPAddress otaip(192, 168, 0, 1);       // this is the ip
+        const IPAddress otanetmask(255, 255, 255, 0);
+        // const int otaport = 8880;
+
+        const byte ContentNum = 10;
+        String Content[ContentNum] = {
+                "Firmware",
+                "OTA-Upload:",
+                "",
+                "NOT WORKING YET!",
+                "",
+                "SSID: \"OTA\"",
+                "PW:   \"OTAOTA00\"",
+                "IP:   192.168.0.1",
+                "",
+                "Back"
+        };
+
+        WiFi.disconnect();
+        WiFi.mode(WIFI_AP);
+        WiFi.softAPConfig(otaip, otaip, otanetmask);
+        WiFi.softAP(otassid, otapw);
+        // WiFi.softAP(otassid);
+        ArduinoOTA.begin();
+
+        // Content[5] = "IP:   " + WiFi.softAPIP().toString();
+
+        TFTConfigPrepare();
+        for (int i = 0; i < ContentNum; i++) {
+                TFTConfigPrint(i, Content[i], TFT_COLOR_CNF_STD);
+        }
+
+        while(!checkEnter()) {
+                ArduinoOTA.handle();
+        }
+
+        ArduinoOTA.end();
+        WiFi.softAPdisconnect (true);
+
 }

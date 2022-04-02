@@ -8,6 +8,7 @@
 //
 //   TODO:  -> Multi-Char Numbers in Config (BT Address, BT Pin, hosts) (sprintf ??)
 //          -> More
+//          -> OTA-Uploads ?
 //
 /////////////////////////////////////////
 
@@ -45,14 +46,16 @@
 #include <esp_wifi.h>               // FOR SLEEP !
 #include <esp_bt.h>                 // FOR SLEEP !
 
+#include <ArduinoOTA.h>             // for Over-The-Air programming
+
 // Needed for Bluetooth SSID-Search. This is not supported in official current arduino/platformio releases
 // comment out, if you use official releases.
 // you have to set BT-MAC-Address manually then.
 // #define USE_NEW_ARDUINO_ESP 1
 
 // DEBUG
-#define SERIAL_DEBUG 0
-#define SERIAL_DEBUG_IN 0
+#define SERIAL_DEBUG 1
+#define SERIAL_DEBUG_IN 1
 
 
 // WiFi & WiFi-AP
@@ -70,11 +73,12 @@ IPAddress APHost(192,168,0,1);
 int APPort = 8880;
 
 // BLUETOOTH
+// 00:21:13:01:3C:6F -> CNC
+// 00:21:13:01:2C:C9 -> TEST
 uint8_t BluetoothHost[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F};
-uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F}; // 002113013C6F
+const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x2C,0xC9}; // 002113013C6F
+// const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F}; // 002113013C6F
 int BluetoothPin = 1234;
-const char *BluetoothPinFix = "1234";
-String BluetoothSSIDFix = "GRBLHAL";
 BluetoothSerial btSerial;
 #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
 #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
@@ -158,7 +162,7 @@ uint64_t SleepPinMask = 0;
 // #define TFT_RST 4       // TO VCC !!!
 #define TFT_LED GPIO_NUM_17
 TFT_eSPI tft = TFT_eSPI();
-#define TFT_FPS 10          // was 20
+#define TFT_FPS 20          // was 20
 void TFTUpdate();
 TickTwo TftTicker(TFTUpdate, (1000 / TFT_FPS));
 
@@ -251,6 +255,8 @@ void setup() {
         pinMode(KEYPAD_PIN, INPUT);
         pinMode(BATTERY_PIN, INPUT);
         pinMode(TFT_LED, OUTPUT);
+
+        // ArduinoOTA.begin();
 
         // STARTING ENCODER INTERRUPTS:
         rotaryEncoder.begin();
@@ -347,6 +353,7 @@ void setup() {
 
 
 void loop() {
+        // ArduinoOTA.handle();
         TftTicker.update();
         EncoderTicker.update();
         KeypadTicker.update();

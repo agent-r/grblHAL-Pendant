@@ -35,11 +35,10 @@ void probeZ() {
         if (checkEnterConfirm()) {
 
                 sendCmd("gcode", "G91", ""); delay(50);
-                // {"gcode":"G38.2Z-1F100"}
                 sendCmd("gcode", "G38.2Z" + String(ProbeDepth) + "F" + String(ProbeSpeed), "PROBE: GO DOWN"); delay(100);
 
                 for (int i = 0; i < (ProbeTime * 50); i++) {
-                        // CAN THIS BE DONE WIHT A "DWELL"-COMMAND (= WAIT FOR BUFFER EMPTY) ???
+                        // CAN THIS BE DONE WIHT A "DWELL"-COMMAND (=> WAIT FOR BUFFER EMPTY) ???
                         TftTicker.update();
                         if (state == "Run") { run_check = true; }
                         if ((state == "Idle") && run_check) { break; }

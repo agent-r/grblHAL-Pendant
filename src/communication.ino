@@ -21,6 +21,7 @@ void ConnectionSetup() {
                 WiFi.disconnect();
                 WiFi.mode(WIFI_OFF);
                 btSerial.begin("PENDANT", true); // MASTER
+                if (SERIAL_DEBUG) { Serial.println("... via Bluetooth"); }
                 // btSerial.begin("PENDANT");  // SLAVE
                 break;
         }
@@ -113,6 +114,7 @@ bool ConnectWifi() {
 
 
 bool ConnectTCP(IPAddress tcpip, int tcpport) {
+
         while (!TCPClient.connected()) {
 
                 TCPClient.connect(tcpip, tcpport);
@@ -160,12 +162,12 @@ bool ConnectBT() {
    }
  */
 
-        while(!btSerial.connected(0)) {
+        while(!btSerial.connected(1000)) {  // was 0
                 TFTPrint(MessageField, "Starting BLUETOOTH..", TFT_COLOR_STA_ERR);
                 SleepTicker.update();
                 if (checkConfig()) { config(); return(false); }                      // Start config routine
-                if (SERIAL_DEBUG) { Serial.println("WARNING: BT CONNECTING! Device is available?"); }
-                btSerial.setPin(BluetoothPinFix);
+                if (SERIAL_DEBUG) { Serial.println("connecting Bluetooth ... Device is available?"); }
+                btSerial.setPin(String(BluetoothPin).c_str());
                 btSerial.connect(BluetoothHost);
                 delay(50);
         }
@@ -179,8 +181,8 @@ bool ConnectBT() {
    AT+NAME=GRBLHAL
    AT+ROLE=0          // SLAVE
    AT+PSWD="1234"     // 1234
-   AT+ADDR?           // 21:13:13C6F = 00:21:13:01:3C:6F -> TEST 002113013C6F
-                      // 21:13:12CC9 = 00:21:13:01:2C:C9 -> CNC
+   AT+ADDR?           // 21:13:13C6F = 00:21:13:01:3C:6F -> CNC
+                      // 21:13:12CC9 = 00:21:13:01:2C:C9 -> TEST 002113013C6F
  */
 
 void getState() {
@@ -195,11 +197,17 @@ void getState() {
                 switch (ConnectionMode) {
                 case 0:
                 case 1:
+
+                        // TCPClient.connect(WifiHost, WifiPort);
+
                         while (TCPClient.available() > 0) {
-                                while (TCPClient.available() > 400) {
-                                        TCPClient.read();
-                                        if (SERIAL_DEBUG_IN) {Serial.println("WARNING: INBUFFER OVERFLOW");}
+                                if (TCPClient.available() > 400) {
+                                        while(TCPClient.available()) {
+                                                TCPClient.read();
+                                        }
+                                        if (SERIAL_DEBUG_IN) { Serial.println("WARNING: INBUFFER OVERFLOW");}
                                 }
+
                                 buffer_char = TCPClient.read();
 
                                 if (buffer_char == '{') {
@@ -219,11 +227,16 @@ void getState() {
                                         buffer_idx++;
                                 }
                         }
+                // TCPClient.stop();
+
+                // Bluetooth
                 case 2:
                         while (btSerial.available() > 0) {
-                                while (btSerial.available() > 400) {
-                                        btSerial.read();
-                                        if (SERIAL_DEBUG_IN) {Serial.println("WARNING: INBUFFER OVERFLOW");}
+                                if (btSerial.available() > 400) {
+                                        while(btSerial.available()) {
+                                                btSerial.read();
+                                        }
+                                        if (SERIAL_DEBUG_IN) { Serial.println("WARNING: INBUFFER OVERFLOW"); }
                                 }
                                 buffer_char = btSerial.read();
 
@@ -294,6 +307,8 @@ void deserialize(String JsonString) {
 void sendCmd(const String type, const String cmd, const String cmd_info) {
         if (Connect() && !hold)
         {
+                // TCPClient.connect(WifiHost, WifiPort);
+
                 switch(ConnectionMode) {
                 case 0:
                 case 1:
@@ -305,6 +320,9 @@ void sendCmd(const String type, const String cmd, const String cmd_info) {
                 }
                 if (SERIAL_DEBUG) {Serial.println("{\"" + type + "\":\"" + cmd + "\"}");}
                 TFTPrint(MessageField, cmd_info, TFT_COLOR_MSG_NRM);
+
+                // TCPClient.stop();
+
         }
         else {
                 TFTPrint(MessageField, "NO CONNECTION. HOLD!", TFT_COLOR_MSG_ERR);
