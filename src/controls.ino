@@ -3,28 +3,83 @@
 /////////////////////      CONTROLS      //////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
+#define ENCODER_MIN -1000
+#define ENCODER_MAX 1000
+bool EncoderToggle = true;
 
-void checkEncoder() {
-        if (rotaryEncoder.encoderChanged()) {
-                sendCmd("gcode", "$J=G91" + AxisName[activeAxis] + (factor[activeFactor] * rotaryEncoder.readEncoder() * AxisDir[activeAxis]) + "F" + JogSpeed[activeAxis], "JOG " + AxisName[activeAxis] + (factor[activeFactor] * rotaryEncoder.readEncoder() * AxisDir[activeAxis]));
-                rotaryEncoder.reset();
-                if (SleepTime > 0) {SleepTicker.start();}
+void handleEncoder(void *pvParameters) {
+        NewEncoder::EncoderState currentEncoderstate;
+        int16_t currentValue;
+
+        encoderQueue = xQueueCreate(1, sizeof(NewEncoder::EncoderState));
+        if (encoderQueue == nullptr) {
+                // printf("Failed to create encoderQueue. Aborting\n");
+                vTaskDelete(nullptr);
+        }
+
+        // Use FULL_PULSE for encoders that produce one complete quadrature pulse per detnet, such as: https://www.adafruit.com/product/377
+        // Use HALF_PULSE for endoders that produce one complete quadrature pulse for every two detents, such as: https://www.mouser.com/ProductDetail/alps/ec11e15244g1/?qs=YMSFtX0bdJDiV4LBO61anw==&countrycode=US&currencycode=USD
+        NewEncoder *encoder1 = new NewEncoder(CORE_INT36_PIN, CORE_INT39_PIN, ENCODER_MIN, ENCODER_MAX, 0, HALF_PULSE);
+        if (encoder1 == nullptr) {
+                // if (SERIAL_DEBUG) { printf("ENCODER : Failed to allocate NewEncoder object. Aborting.\n"); }
+                vTaskDelete(nullptr);
+        }
+
+        if (!encoder1->begin()) {
+                // if (SERIAL_DEBUG) { printf("ENCODER : Failed to Start. Check pin assignments and available interrupts. Aborting.\n"); }
+                delete encoder1;
+                vTaskDelete(nullptr);
+        }
+
+        encoder1->getState(currentEncoderstate);
+        // if (SERIAL_DEBUG) { printf("ENCODER: Encoder Successfully Started at value = %d\n", prevEncoderValue); }
+        encoder1->attachCallback(callBack);
+
+        for (;;) {
+                xQueueReceive(encoderQueue, &currentEncoderstate, portMAX_DELAY);
+                currentValue = currentEncoderstate.currentValue;
+
+                if (EncoderToggle) {
+                        EncoderValue -= currentValue;
+                        // if (SERIAL_DEBUG) { printf("ENCODER: %d\n", EncoderValue); }
+                }
+                EncoderToggle = !EncoderToggle;
+                encoder1->newSettings(ENCODER_MIN, ENCODER_MAX, 0, currentEncoderstate);
+        }
+        vTaskDelete(nullptr);
+}
+
+void ESP_ISR callBack(NewEncoder*encPtr, const volatile NewEncoder::EncoderState *state, void *uPtr) {
+        BaseType_t pxHigherPriorityTaskWoken = pdFALSE;
+
+        xQueueOverwriteFromISR(encoderQueue, (void * )state, &pxHigherPriorityTaskWoken);
+        if (pxHigherPriorityTaskWoken) {
+                portYIELD_FROM_ISR();
         }
 }
 
 
-/*
-   void checkEncoder() {
-        int count = rotaryEncoder.getCount();
-        if (count != 0) {
-                sendCmd("gcode", "$J=G91" + AxisName[activeAxis] + (factor[activeFactor] * count * AxisDir[activeAxis]) + "F" + JogSpeed[activeAxis], "JOG " + AxisName[activeAxis] + (factor[activeFactor] * count * AxisDir[activeAxis]));
-                rotaryEncoder.clearCount();
-                if (SleepTime > 0) {SleepTicker.start();}
+void checkEncoder() {
+        if (EncoderChange()) {
+                sendCmd("gcode", "$J=G91" + AxisName[activeAxis] + (factor[activeFactor] * readEncoder() * AxisDir[activeAxis]) + "F" + JogSpeed[activeAxis], "JOG " + AxisName[activeAxis] + (factor[activeFactor] * readEncoder() * AxisDir[activeAxis]));
+                EncoderValue = 0;
+                if (SleepTime > 0) { SleepTicker.start(); }
         }
-   }
- */
+}
 
-/////////////////////////////////////////////////////////////////
+bool EncoderChange() {
+        return(EncoderValue != 0);
+}
+int16_t readEncoder() {
+        return (EncoderValue);
+}
+void resetEncoder() {
+        EncoderValue = 0;
+}
+
+
+
+/////////////////////////////    KEYPAD    ////////////////////////////////////
 
 
 void checkKeypad() {
@@ -87,6 +142,7 @@ bool checkEnter() {
 bool checkEnterConfirm() {
         for (int i = 0; i < 50; i++) {
                 if (checkEnter()) { return(true); }
+                StateTicker.update();
                 TftTicker.update();
                 delay(40);
         }

@@ -4,8 +4,8 @@
  */
 
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
 #include <ArduinoOTA.h> // for Over-The-Air programming
+#include <TickTwo.h>
 
 // config: ////////////////////////////////////////////////////////////
 
@@ -20,6 +20,10 @@ IPAddress netmask(255, 255, 255, 0);
 WiFiServer Server(TCP_PORT);
 WiFiClient TCPClient;
 
+#define ALIVE_TIME 2              // Update Rate for Sending Code
+void Alive();
+TickTwo AliveTicker(Alive, (1000 * ALIVE_TIME));
+
 #define DEBUG 0
 
 //////////////////////////////////////////////////////////////////////////
@@ -29,7 +33,7 @@ void setup() {
 
         ArduinoOTA.begin();
 
-        delay(500);
+        delay(1000);
         Serial.begin(115200);
 
         WiFi.mode(WIFI_AP);
@@ -37,9 +41,9 @@ void setup() {
         WiFi.softAP(ssid, pw);
 
         Server.begin();
+        AliveTicker.start();
         // Server.setNoDelay(true); // ? TRUE > NO NAGLE ALGORITHM
 
-        // delay(4000);    // wait a few seconds //
         if (DEBUG) { SerialMessage("[WIFI] Module started"); }
 
 }
@@ -49,46 +53,52 @@ void loop()
 {
 
         ArduinoOTA.handle();    // OTA-Handler
+        AliveTicker.update();
 
         TCPClient = Server.available();
         // TCPClient.setNoDelay(true);
 
-        if (TCPClient) {
+        // if (TCPClient) {
 
-                if(TCPClient.connected()) {
-                        if (DEBUG) { SerialMessage("[WIFI] Client Connected"); }
-                        // TCPClient.setNoDelay(true);
+        if (TCPClient.connected() && DEBUG) { SerialMessage("[WIFI] Client Connected"); }
+
+        while(TCPClient.connected()) {
+
+                // check OTA from time to time...
+                ArduinoOTA.handle();
+
+                // read data from the connected client
+                while (TCPClient.available() > 0) {
+                        Serial.write(TCPClient.read());
+                        AliveTicker.start();
                 }
-                else {
-                        if (DEBUG) { SerialMessage("[WIFI] No Client Connected"); }
-                }
-
-                while(TCPClient.connected()) {
-
-                        // check OTA from time to time...
-                        ArduinoOTA.handle();
-
-                        // read data from the connected client
-                        while (TCPClient.available() > 0) {
-                                Serial.write(TCPClient.read());
-                        }
-
-                        //Send Data to connected client
-                        while (Serial.available() > 0) {
-                                // usually max 1071 bytes -> only use around 400!
-                                // if (TCPClient.availableForWrite() > 600) {
-                                TCPClient.write(Serial.read());
-                                // }
-                                // else {
-                                //        Serial.read();  // discard Data to prevent overflow!
-                                // }
-                        }
+                // send data to connected client
+                while (Serial.available() > 0) {
+                        TCPClient.write(Serial.read());
+                        // AliveTicker.update();
                 }
 
-                TCPClient.stop();
-                if (DEBUG) { SerialMessage("[WIFI] Client disconnected"); }
+                AliveTicker.update();
+
         }
 
+        TCPClient.stop();
+        // if (DEBUG) { SerialMessage("[WIFI] Client disconnected"); }
+
+
+        // read away serial data!
+        while (Serial.available()) {
+                Serial.read();
+                AliveTicker.update();
+        }
+
+}
+
+
+void Alive() {
+        if (DEBUG) { SerialMessage("[WIFI] Timeout: Client killed"); }
+        TCPClient.stop();
+        AliveTicker.stop();
 }
 
 

@@ -39,6 +39,7 @@ void probeZ() {
 
                 for (int i = 0; i < (ProbeTime * 50); i++) {
                         // CAN THIS BE DONE WIHT A "DWELL"-COMMAND (=> WAIT FOR BUFFER EMPTY) ???
+                        StateTicker.update();
                         TftTicker.update();
                         if (state == "Run") { run_check = true; }
                         if ((state == "Idle") && run_check) { break; }

@@ -24,7 +24,7 @@ const int ConfigFields[12][5] = {
 
 
 void config() {
-        const byte ContentNum = 11;
+        const byte ContentNum = 10;
         const String Content[ContentNum] = {
                 "Config",
                 "Connection",
@@ -35,7 +35,7 @@ void config() {
                 "Brightness",
                 "Battery",
                 "Info",
-                "Firmware Update",
+                //        "Firmware Update",
                 "Exit"
         };
         while(true) {
@@ -48,8 +48,8 @@ void config() {
                 case 6: configBrightness(); break;
                 case 7: configBattery(); break;
                 case 8: configInfo(); break;
-                case 9: configOTA(); break;
-                case 10: TFTPrepare(); ConnectionSetup(); return;
+                // case 9: configOTA(); break;
+                case 9: TFTPrepare(); ConnectionSetup(); return;
                 }
         }
 }
@@ -72,12 +72,12 @@ void configConnection() {
 }
 
 void configConnectionMode() {
-        const byte ContentNum = 5;
+        const byte ContentNum = 4;
         String Content[ContentNum] = {
                 "Connect Mode",
                 "WIFI Slave",
                 "WIFI AP",
-                "BLUETOOTH Slave",
+                //    "BLUETOOTH Slave",
                 "Back"
         };
         ConnectionMode = EEPROM.read(EEConnectionMode);
@@ -85,8 +85,8 @@ void configConnectionMode() {
         switch (TFTConfigMenu(Content, ContentNum)) {
         case 1: ConnectionMode = 0; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
         case 2: ConnectionMode = 1; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
-        case 3: ConnectionMode = 2; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
-        case 4: return;
+        //    case 3: ConnectionMode = 2; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
+        case 3: return;
         }
         if (SERIAL_DEBUG) { Serial.println("CONFIG : ConnectionMode : " + String(ConnectionMode)); }
         EEPROM.write(EEConnectionMode, ConnectionMode); EEPROM.commit();
@@ -143,15 +143,17 @@ void configConnectionSettings() {
                         case 5: return;
                         }
                 }
-        case 2:
-                while(true) {
+                /*
+                   case 2:
+                   while(true) {
                         switch (TFTConfigMenu(ContentBluetooth, ContentNumBluetooth)) {
                         case 1: configBluetoothSSID(); break;
                         case 2: configBluetoothAddress(); break;
                         case 3: configBluetoothPin(); break;
                         case 4: return;
                         }
-                }
+                   }
+                 */
         }
 }
 
@@ -231,8 +233,8 @@ void configAPPort() {
         if (SERIAL_DEBUG) { Serial.println("CONFIG : APPort : " + String(APPort)); }
         EepromWriteInt(APPort, EEAPPort);
 }
-
-void configBluetoothAddress() {
+/*
+   void configBluetoothAddress() {
         for (int i = 0; i < 6; i++) {
                 BluetoothHost[i] = EEPROM.read(EEBluetoothHost + i);
         }
@@ -315,22 +317,22 @@ void configBluetoothAddress() {
                         }
                 }
         }
-}
+   }
 
-#ifdef USE_NEW_ARDUINO_ESP
-String BluetoothSSIDNameList[10];
-uint8_t BluetoothAddressList[10][6];
-bool BluetoothSSIDFound = false;
-int BluetoothSSIDNum = -1;
-#endif
+ #ifdef USE_NEW_ARDUINO_ESP
+   String BluetoothSSIDNameList[10];
+   uint8_t BluetoothAddressList[10][6];
+   bool BluetoothSSIDFound = false;
+   int BluetoothSSIDNum = -1;
+ #endif
 
-void configBluetoothDeviceFound(
-    #ifdef USE_NEW_ARDUINO_ESP
+   void configBluetoothDeviceFound(
+ #ifdef USE_NEW_ARDUINO_ESP
         BTAdvertisedDevice* pDevice
-    #endif
+ #endif
         ) {
 
-   #ifdef USE_NEW_ARDUINO_ESP
+ #ifdef USE_NEW_ARDUINO_ESP
 
         String strBluetoothSSID;
         char strBluetoothAddress[20];
@@ -351,12 +353,12 @@ void configBluetoothDeviceFound(
                 }
                 // BluetoothAddressListString[BluetoothSSIDNum] = pDevice->getAddress().toString().c_str();
         }
-        #endif
-}
+ #endif
+   }
 
-void configBluetoothSSID() {
+   void configBluetoothSSID() {
 
-#ifdef USE_NEW_ARDUINO_ESP
+ #ifdef USE_NEW_ARDUINO_ESP
 
         char strAddress[20];
         byte activeMenu = 1;
@@ -431,16 +433,17 @@ void configBluetoothSSID() {
         Serial.print("Stop Search");
         btSerial.discoverAsyncStop();
 
-#endif
-}
+ #endif
+   }
 
 
-void configBluetoothPin() {
+   void configBluetoothPin() {
         BluetoothPin = EepromReadInt(EEBluetoothPin);
         BluetoothPin = (int)TFTConfigValue("Bluetooth Pin", 0, 9999, BluetoothPin, 0, "", 4);
         if (SERIAL_DEBUG) { Serial.println("CONFIG : BluetoothPin : " + String(BluetoothPin)); }
         EepromWriteInt(BluetoothPin, EEBluetoothPin);
-}
+   }
+ */
 
 void configJogging() {
         const byte ContentNum = 6;
@@ -632,8 +635,8 @@ void configInfo() {
         TFTConfigInfo(Content, ContentNum);
 }
 
-
-void configOTA() {
+/*
+   void configOTA() {
         const char * otassid = "OTA";       // You will connect your penant to this Access Point
         const char * otapw = "OTAOTA00";        // and this is the password
         const IPAddress otaip(192, 168, 0, 1);       // this is the ip
@@ -659,7 +662,7 @@ void configOTA() {
         WiFi.softAPConfig(otaip, otaip, otanetmask);
         WiFi.softAP(otassid, otapw);
         // WiFi.softAP(otassid);
-        ArduinoOTA.begin();
+        // ArduinoOTA.begin();
 
         // Content[5] = "IP:   " + WiFi.softAPIP().toString();
 
@@ -669,10 +672,11 @@ void configOTA() {
         }
 
         while(!checkEnter()) {
-                ArduinoOTA.handle();
+                // ArduinoOTA.handle();
         }
 
-        ArduinoOTA.end();
+        // ArduinoOTA.end();
         WiFi.softAPdisconnect (true);
 
-}
+   }
+ */

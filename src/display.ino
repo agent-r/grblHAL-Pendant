@@ -19,7 +19,7 @@ const int Line[4] = {0,234,240};
 
 void TFTUpdate() {
 
-        getState();
+        // getState();
 
         if (wxchange || axischange) {
                 char strwx[7];
@@ -75,6 +75,11 @@ void TFTUpdate() {
 
 void TFTSleep() {
         SleepTicker.stop();
+        // Needed?
+        // StateTicker.stop();
+        // TftTicker.stop();
+        //etc.
+
         if (SERIAL_DEBUG) {Serial.println("GO TO SLEEP...");}
         // Turn off TFT
         analogWrite(TFT_LED, 0);
@@ -86,14 +91,18 @@ void TFTSleep() {
         esp_wifi_stop();
         adc_power_off();
         // Stop Bluetooth
-        btSerial.end();
-        esp_bt_controller_disable();
-        esp_bt_controller_deinit();
+        /*
+           btSerial.end();
+           esp_bt_controller_disable();
+           esp_bt_controller_deinit();
+         */
         // wait a moment for connections to close...
-        delay(1000);
+        delay(1500);
         // Set Wakeup Pins
-        bitSet64(SleepPinMask, ROTARY_ENCODER_A_PIN);
-        bitSet64(SleepPinMask, ROTARY_ENCODER_B_PIN);
+//        bitSet64(SleepPinMask, ROTARY_ENCODER_A_PIN);
+//        bitSet64(SleepPinMask, ROTARY_ENCODER_B_PIN);
+        bitSet64(SleepPinMask, CORE_INT36_PIN);
+        bitSet64(SleepPinMask, CORE_INT39_PIN);
         bitSet64(SleepPinMask, KEYPAD_PIN);
         esp_sleep_enable_ext1_wakeup(SleepPinMask, ESP_EXT1_WAKEUP_ANY_HIGH);
         // GoTo Sleep
@@ -105,10 +114,13 @@ void TFTSleep() {
         if (SERIAL_DEBUG) { Serial.println("... WAKE UP"); }
         wxchange = true; wychange = true; wzchange = true, wachange = true; statechange = true;
         // rotaryEncoder.clearCount();
-        rotaryEncoder.reset();
+        // rotaryEncoder.reset();
+        EncoderValue = 0;
         analogWrite(TFT_LED, TFT_BRIGHTNESS);
         TFTPrepare();
         if (SleepTime > 0 ) {SleepTicker.start();}
+        // StateTicker.start();
+        // TftTicker.start();
 }
 
 

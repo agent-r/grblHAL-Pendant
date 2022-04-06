@@ -33,16 +33,14 @@ byte TFTConfigMenu(const String* Content, const int Length) {
 
         while(true) {
                 delay(20);
-                // int count = rotaryEncoder.getCount();
-                int count = rotaryEncoder.readEncoder();
+                int count = readEncoder(); // rotaryEncoder.readEncoder();
                 if (count != 0) {
                         TFTConfigPrint(activeMenu, "  " + Content[activeMenu], TFT_COLOR_CNF_STD);
                         activeMenu = activeMenu + count;
                         if (activeMenu > (Length - 1)) {activeMenu = 1;}
                         if (activeMenu < 1) {activeMenu = (Length - 1);}
                         TFTConfigPrint(activeMenu, "> " + Content[activeMenu], TFT_COLOR_CNF_STD);
-                        // rotaryEncoder.clearCount();
-                        rotaryEncoder.reset();
+                        resetEncoder(); // rotaryEncoder.reset();
                 }
 
                 if (checkEnter()) {
@@ -63,16 +61,14 @@ float TFTConfigValue(const String Title, const int Min, const int Max, float Val
 
         while (true) {
                 delay(20);
-                // int count = rotaryEncoder.getCount();
-                int count = rotaryEncoder.readEncoder();
+                int count = readEncoder(); // rotaryEncoder.readEncoder();
                 if (count != 0) {
                         Value = Value + (count * pow(10, Factor));
                         if (Value > Max) {Value = Min;}
                         if (Value < Min) {Value = Max;}
                         sprintf(strValue, "%0*.*f %s", leadingZeros, Decimals, Value, Unit);
                         TFTConfigPrint(2, String(strValue), TFT_COLOR_CNF_STD);
-                        // rotaryEncoder.clearCount();
-                        rotaryEncoder.reset();
+                        resetEncoder(); // rotaryEncoder.reset();
                 }
 
                 if (checkEnter()) {
@@ -107,14 +103,12 @@ String TFTConfigString(const String Title, const String oldString) {
 
         do {
                 delay(20);
-                // int count = rotaryEncoder.getCount();
-                int count = rotaryEncoder.readEncoder();
+                int count = readEncoder(); // rotaryEncoder.readEncoder();
                 if (count != 0) {
 
                         oldChar = activeChar;
                         activeChar = activeChar + count;
-                        // rotaryEncoder.clearCount();
-                        rotaryEncoder.reset();
+                        resetEncoder(); // rotaryEncoder.reset();
 
                         if (activeChar < 33) {activeChar = 130;}
                         if (activeChar > 130) {activeChar = 33;}
@@ -230,12 +224,10 @@ IPAddress TFTConfigIP (const String Title, IPAddress newIP) {
                         }
                 }
 
-                // int count = rotaryEncoder.getCount();
-                int count = rotaryEncoder.readEncoder();
+                int count = readEncoder(); // rotaryEncoder.readEncoder();
                 if (count != 0) {
                         newIP[activeByte] = newIP[activeByte] + count;
-                        // rotaryEncoder.clearCount();
-                        rotaryEncoder.reset();
+                        resetEncoder();   // rotaryEncoder.reset();
                         tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
                         tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
 

@@ -34,10 +34,13 @@
 #include <WiFi.h>                   // WIFI
 #include <WiFiClient.h>             // WIFI
 // #include "BluetoothSerialPatched.h"
-#include <BluetoothSerial.h>
+// #include <BluetoothSerial.h>
 #include <EEPROM.h>                 // EEPROM
 #include <TickTwo.h>                // TICKER
-#include "AiEsp32RotaryEncoder.h"   // ROTARY ENCODER
+
+//#include "AiEsp32RotaryEncoder.h"   // ROTARY ENCODER
+#include <NewEncoder.h>
+
 // #include "ESP32Encoder.h"
 #include <ArduinoJson.h>            // JSON
 #include <SPI.h>                    // TFT
@@ -46,18 +49,19 @@
 #include "fonts.h"                  // FONTS
 #include "driver/adc.h"             // FOR SLEEP !
 #include <esp_wifi.h>               // FOR SLEEP !
-#include <esp_bt.h>                 // FOR SLEEP !
+// #include <esp_bt.h>                 // FOR SLEEP !
 
-#include <ArduinoOTA.h>             // for Over-The-Air programming
+// #include <ArduinoOTA.h>             // for Over-The-Air programming
 
 // Needed for Bluetooth SSID-Search. This is not supported in official current arduino/platformio releases
 // comment out, if you use official releases.
 // you have to set BT-MAC-Address manually then.
 // #define USE_NEW_ARDUINO_ESP 1
 
-// DEBUG
-#define SERIAL_DEBUG 0
-#define SERIAL_DEBUG_IN 0
+///////////    DEBUG     ////////////////////////////////////
+#define SERIAL_DEBUG 1          // General messages
+#define SERIAL_DEBUG_IN 0       // Wifi+Blluetooth Inputs
+#define SERIAL_DEBUG_OUT 1      // Wifi+Bluetooth Outputs
 
 // WiFi & WiFi-AP
 byte ConnectionMode = 0; // 0 = WIFI SLAVE    1 = WIFI AP    2 = BLUETOOTH SLAVE
@@ -73,18 +77,19 @@ String APPW;
 IPAddress APHost(192,168,0,1);
 int APPort = 8880;
 
-// BLUETOOTH
-// 00:21:13:01:3C:6F -> CNC
-// 00:21:13:01:2C:C9 -> TEST
-uint8_t BluetoothHost[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F};
-const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x2C,0xC9}; // 002113013C6F
-// const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F}; // 002113013C6F
-int BluetoothPin = 1234;
-BluetoothSerial btSerial;
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
-#endif
-
+/*
+   // BLUETOOTH
+   // 00:21:13:01:3C:6F -> CNC
+   // 00:21:13:01:2C:C9 -> TEST
+   uint8_t BluetoothHost[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F};
+   const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x2C,0xC9}; // 002113013C6F
+   // const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F}; // 002113013C6F
+   int BluetoothPin = 1234;
+   BluetoothSerial btSerial;
+ #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+ #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+ #endif
+ */
 
 //EEPROM ADDRESSES
 #define EEConnectionMode 0  //          Byte (1)
@@ -96,8 +101,8 @@ BluetoothSerial btSerial;
 #define EEAPPW 97           // bis 126  String (30)
 #define EEAPHost 127        // bis 130  IP (4)
 #define EEAPPort 131        // bis 132  Int (2)
-#define EEBluetoothHost 133 // bis 138  Adress (6)
-#define EEBluetoothPin 139  // bis 140  Int (2)
+// #define EEBluetoothHost 133 // bis 138  Adress (6)
+// #define EEBluetoothPin 139  // bis 140  Int (2)
 #define EEJogSpeed 141      // bis 148  Int (4x2=8) XYZA
 #define EEProbeOffset 149   // bis 152  Float (4)
 #define EEProbeDepth 153    // bis 154  Int (2)
@@ -109,21 +114,27 @@ BluetoothSerial btSerial;
 
 
 // ROTARY ENCODER
-
-#define ROTARY_ENCODER_A_PIN GPIO_NUM_36
-#define ROTARY_ENCODER_B_PIN GPIO_NUM_39
-
-#define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
-#define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
-#define ROTARY_ENCODER_STEPS 4
-volatile int rot_clicks = 0;
-AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
-void IRAM_ATTR readEncoderISR() {
+/*
+ #define ROTARY_ENCODER_A_PIN GPIO_NUM_36
+ #define ROTARY_ENCODER_B_PIN GPIO_NUM_39
+ #define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
+ #define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
+ #define ROTARY_ENCODER_STEPS 4
+   volatile int rot_clicks = 0;
+   AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
+   void IRAM_ATTR readEncoderISR() {
         rotaryEncoder.readEncoder_ISR();
-}
+   }
+ */
+void handleEncoder(void *pvParameters);
+void ESP_ISR callBack(NewEncoder *encPtr, const volatile NewEncoder::EncoderState *state, void *uPtr);
+QueueHandle_t encoderQueue;
+// volatile int16_t prevEncoderValue;
+volatile int16_t EncoderValue = 0;
+
 
 // ESP32Encoder rotaryEncoder;
-#define ENCODER_FPS 5              // Update Rate for Sending Code
+#define ENCODER_FPS 4              // Update Rate for Sending Code
 void checkEncoder();
 TickTwo EncoderTicker(checkEncoder, (1000 / ENCODER_FPS));
 
@@ -154,7 +165,12 @@ TickTwo SleepTicker(TFTSleep, (60000 * SleepTime)); // 60000
 #define bitSet64(value, bit) ((value) |= (1ULL << (bit)))
 uint64_t SleepPinMask = 0;
 
-// TFT
+// STATE UPDATES
+#define STATE_FPS 6
+void getState();
+TickTwo StateTicker(getState, (1000 / STATE_FPS));
+
+// TFT UPDATES
 // TFT PINS ARE DEFINED IN TFT_ESPI -> USER_SETUP.h
 // #define TFT_SCK    18
 // #define TFT_MOSI   23
@@ -163,7 +179,7 @@ uint64_t SleepPinMask = 0;
 // #define TFT_RST 4       // TO VCC !!!
 #define TFT_LED GPIO_NUM_17
 TFT_eSPI tft = TFT_eSPI();
-#define TFT_FPS 20          // was 20
+#define TFT_FPS 5         // was 10
 void TFTUpdate();
 TickTwo TftTicker(TFTUpdate, (1000 / TFT_FPS));
 
@@ -200,10 +216,14 @@ bool blinker_change = true;
 void TFTMessage();
 TickTwo MessageTicker(TFTMessage, (1000 * MESSAGE));
 
-#define HOLD_TIME 3     // SECONDS from the last State. Or HOLD !!!
+#define HOLD_TIME 2     // SECONDS from the last State. Or HOLD !!!
 void Hold();
 TickTwo HoldTicker(Hold, (1000 * HOLD_TIME));
-bool hold = true;     // wait till connection is REALLY there !
+bool hold = true;       // wait till connection is REALLY there !
+
+#define ALIVE_TIME 1    // Send "OK" !
+void Alive();
+TickTwo AliveTicker(Alive, (1000 * ALIVE_TIME));
 
 //////////////////////////////////////////////////////////////////
 
@@ -260,13 +280,19 @@ void setup() {
         // ArduinoOTA.begin();
 
         // STARTING ENCODER INTERRUPTS:
-        rotaryEncoder.begin();
-        rotaryEncoder.setup(readEncoderISR);
-        rotaryEncoder.disableAcceleration();
-        // ESP32Encoder::useInternalWeakPullResistors=DOWN; // DOWN or UP?
-        // rotaryEncoder.attachSingleEdge(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN);
-        // rotaryEncoder.setFilter(511);   // max 1023
-        // rotaryEncoder.setCount(0);
+        /*
+           rotaryEncoder.begin();
+           rotaryEncoder.setup(readEncoderISR);
+           rotaryEncoder.disableAcceleration();
+         */
+        BaseType_t success = xTaskCreatePinnedToCore(handleEncoder, "Handle Encoder", 1900, NULL, 2, NULL, 1);
+        if (!success) {
+                printf("Failed to create handleEncoder task. Aborting.\n");
+                while (1) {
+                        yield();
+                }
+        }
+
 
         tft.begin();
         tft.setRotation(tftRotation);
@@ -297,10 +323,12 @@ void setup() {
         APPort = EepromReadInt(EEAPPort);
         if (SERIAL_DEBUG) { Serial.println("AP PORT: " + String(APPort)); }
 
-        BluetoothHost[0] = EEPROM.read(EEBluetoothHost); BluetoothHost[1] = EEPROM.read(EEBluetoothHost+1); BluetoothHost[2] = EEPROM.read(EEBluetoothHost+2); BluetoothHost[3] = EEPROM.read(EEBluetoothHost+3); BluetoothHost[4] = EEPROM.read(EEBluetoothHost+4); BluetoothHost[5] = EEPROM.read(EEBluetoothHost+5);
-        if (SERIAL_DEBUG) { Serial.println("Bluetooth Host Address: " + String(BluetoothHost[0], HEX) + ":" + String(BluetoothHost[1], HEX) + ":" + String(BluetoothHost[2], HEX) + ":" + String(BluetoothHost[3], HEX) + ":" + String(BluetoothHost[4], HEX) + ":" + String(BluetoothHost[5], HEX)); }
-        BluetoothPin = EepromReadInt(EEBluetoothPin);
-        if (SERIAL_DEBUG) { Serial.println("Bluetooth Pin: " + String(BluetoothPin)); }
+        /*
+           BluetoothHost[0] = EEPROM.read(EEBluetoothHost); BluetoothHost[1] = EEPROM.read(EEBluetoothHost+1); BluetoothHost[2] = EEPROM.read(EEBluetoothHost+2); BluetoothHost[3] = EEPROM.read(EEBluetoothHost+3); BluetoothHost[4] = EEPROM.read(EEBluetoothHost+4); BluetoothHost[5] = EEPROM.read(EEBluetoothHost+5);
+           if (SERIAL_DEBUG) { Serial.println("Bluetooth Host Address: " + String(BluetoothHost[0], HEX) + ":" + String(BluetoothHost[1], HEX) + ":" + String(BluetoothHost[2], HEX) + ":" + String(BluetoothHost[3], HEX) + ":" + String(BluetoothHost[4], HEX) + ":" + String(BluetoothHost[5], HEX)); }
+           BluetoothPin = EepromReadInt(EEBluetoothPin);
+           if (SERIAL_DEBUG) { Serial.println("Bluetooth Pin: " + String(BluetoothPin)); }
+         */
 
         JogSpeed[0] = EepromReadInt(EEJogSpeed);
         if (SERIAL_DEBUG) { Serial.println("X JOG SPEED: " + String(JogSpeed[0])); }
@@ -334,10 +362,12 @@ void setup() {
         if (SERIAL_DEBUG) {Serial.println("-------- EEPROM END ---------");}
 
         // STARTING INTERRUPTS !
+        StateTicker.start();
         TftTicker.start();
         if (SleepTime > 0) { SleepTicker.start(); }
         KeypadTicker.start();
         EncoderTicker.start();
+        AliveTicker.start();
         // BatteryTicker.start();
         // BlinkTicker.start();
 
@@ -355,6 +385,7 @@ void setup() {
 
 void loop() {
         // ArduinoOTA.handle();
+        StateTicker.update();
         TftTicker.update();
         EncoderTicker.update();
         KeypadTicker.update();
@@ -363,4 +394,5 @@ void loop() {
         MessageTicker.update();
         SleepTicker.update();
         HoldTicker.update();
+        AliveTicker.update();
 }
