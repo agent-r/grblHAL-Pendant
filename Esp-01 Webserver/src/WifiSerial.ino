@@ -1,15 +1,9 @@
 
-/*
-   TODO: SERIAL-Eingänge verwerfen, wenn keine Verbindung besteht !!!
- */
-
 #include <ESP8266WiFi.h>
 #include <ArduinoOTA.h> // for Over-The-Air programming
 #include <TickTwo.h>
 
-// config: ////////////////////////////////////////////////////////////
-
-#define buffer_size 128     // better 256?
+////////////////////////////  config:  //////////////////////////////////
 
 const char *ssid = "grblHAL";           // You will connect your penant to this Access Point
 const char *pw = "grblHAL1";            // and this is the password
@@ -45,20 +39,16 @@ void setup() {
         // Server.setNoDelay(true); // ? TRUE > NO NAGLE ALGORITHM
 
         if (DEBUG) { SerialMessage("[WIFI] Module started"); }
-
 }
 
 
 void loop()
 {
-
         ArduinoOTA.handle();    // OTA-Handler
         AliveTicker.update();
 
         TCPClient = Server.available();
         // TCPClient.setNoDelay(true);
-
-        // if (TCPClient) {
 
         if (TCPClient.connected() && DEBUG) { SerialMessage("[WIFI] Client Connected"); }
 
@@ -75,7 +65,6 @@ void loop()
                 // send data to connected client
                 while (Serial.available() > 0) {
                         TCPClient.write(Serial.read());
-                        // AliveTicker.update();
                 }
 
                 AliveTicker.update();
@@ -85,13 +74,11 @@ void loop()
         TCPClient.stop();
         // if (DEBUG) { SerialMessage("[WIFI] Client disconnected"); }
 
-
         // read away serial data!
         while (Serial.available()) {
                 Serial.read();
                 AliveTicker.update();
         }
-
 }
 
 

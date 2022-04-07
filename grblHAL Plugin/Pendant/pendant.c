@@ -1,17 +1,26 @@
 /*
-   TODO:    Strange behavior with o or O - characters ???
-            Strange behavior when STOP
-            Strange behavior
+
+   TODO:    ->  when STOPPING by "grbl.enqueue_realtime_command(CMD_STOP);",
+                iO-Sender does not recognize this. I have to manually click "STOP" in sender as well.
+
+            ->  Btw: Can I stop a HOMING process somehow?
+
+
+   TODO:    ->  I am using a handwheel with 100 ticks pre revolution.
+                When turning the wheel I send 5 to 10 Jog-Commands per Second,
+                processed by "grbl.enqueue_gcode("$J=G91X24F1000");".
+                This works very good for single ticks and slow moves, but when turning the wheel fast,
+                some commands get lost or are not processed. Transfer from Pendant to Plugin seems ok.
+                Do I overflow a buffer or something? How can I check this, before sending enquee a command?
  */
 
+
 #include "grbl/hal.h"
-// #include "grbl/system.h"
+#include "networking/cJSON.h"
+#include "grbl/protocol.h"
 #include <stdio.h>
-// #include <stdlib.h>
-// #include <ctype.h>
 #include <string.h>
 #include "pendant.h"
-#include "networking/cJSON.h"
 
 static io_stream_t pendant_serial;
 static on_report_options_ptr on_report_options;
@@ -20,9 +29,9 @@ static on_state_change_ptr on_state_change;
 // #define OVERRIDE_BUFSIZE 1024        // does it help??
 
 
-#define INBUF_SIZE 50
-#define OUTBUF_SIZE 100
-#define STATEBUF_SIZE 16
+#define INBUF_SIZE 50               // I do not expect larger commands
+#define OUTBUF_SIZE 100             // I will not send larger State-Updates
+// #define STATEBUF_SIZE 8
 
 #define ReceiveTicks 1000 / 10        // receive commands 10 times per second
 #define SendTicks 1000 / 8           // send 5 position updates per second (if position changes)
@@ -34,7 +43,7 @@ static uint32_t AliveMs = 0;
 #define pendant_debug_in_raw 0
 #define pendant_debug_out 0
 
-const char StateStrings[12][STATEBUF_SIZE] = {
+const char StateStrings[12][8] = {
         "Idle",
         "Run",
         "Hold",
@@ -57,7 +66,7 @@ static void pendant_parse_and_send_cmd(const char * const cmd_buffer) {
         const cJSON *js_cmd = NULL;
         const cJSON *cmd_json = cJSON_Parse(cmd_buffer);
 
-        char SysExecuteCommand[257];  // is this neccessary?
+        char SysExecuteCommand[LINE_BUFFER_SIZE];  // 257
 
         if (cJSON_HasObjectItem(cmd_json,"cmd")) {
                 js_cmd = cJSON_GetObjectItemCaseSensitive(cmd_json,"cmd");
@@ -74,7 +83,7 @@ static void pendant_parse_and_send_cmd(const char * const cmd_buffer) {
                         {
                                 // grbl.enqueue_realtime_command(CMD_JOG_CANCEL);
                                 grbl.enqueue_realtime_command(CMD_STOP);
-                                // strcpy(SysExecuteCommand, "");
+                                // strcpy(SysExecuteCommand, "$");
                                 // system_execute_line(SysExecuteCommand);     // must be at least "LINE_BUFFER_SIZE" long ???
                         }
                         else if (strcmp(str_cmd, "HOME") == 0)
@@ -105,6 +114,7 @@ static void pendant_parse_and_send_cmd(const char * const cmd_buffer) {
                 AliveMs = hal.get_elapsed_ticks() + AliveTicks;
         }
 
+        // this is for receivong messages (from wifi module debug, for example)
         else if (cJSON_HasObjectItem(cmd_json,"msg")) {
                 js_cmd = cJSON_GetObjectItemCaseSensitive(cmd_json,"msg");
 
@@ -121,6 +131,8 @@ static void pendant_parse_and_send_cmd(const char * const cmd_buffer) {
                 if (pendant_debug_in) { hal.stream.write("[OK]"); hal.stream.write(ASCII_EOL); }
            }
          */
+
+        // This is a keep-alive transmission from the Pendant. If not received once in 2 seconds, stop sending state updates
         else if (strcmp(cmd_buffer, "{\"OK\"}") == 0) {
                 AliveMs = hal.get_elapsed_ticks() + AliveTicks;
                 if (pendant_debug_in) { hal.stream.write("[OK]"); hal.stream.write(ASCII_EOL); }
