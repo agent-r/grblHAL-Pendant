@@ -10,7 +10,7 @@
 //          -> More
 //          -> OTA-Uploads ?
 //          -> Get BT running
-//          ->
+//          -> Improve ReadMe !
 //
 /////////////////////////////////////////
 
