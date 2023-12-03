@@ -87,7 +87,7 @@ byte ConnectionMode = 0; // 0 = WIFI SLAVE    1 = WIFI AP    2 = BLUETOOTH SLAVE
         int APPort = 8880;
 #endif
 
-// BLUETOOTH
+// BLUETOOTH 
 
 static BLEUUID SERVICE_UUID("825aeb6e-7e1d-4973-9c75-30c042c4770c");
 
