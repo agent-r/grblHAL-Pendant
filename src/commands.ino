@@ -39,7 +39,9 @@ void probeZ() {
 
                 for (int i = 0; i < (ProbeTime * 50); i++) {
                         // CAN THIS BE DONE WIHT A "DWELL"-COMMAND (=> WAIT FOR BUFFER EMPTY) ???
+#ifndef BLE_ONLY
                         StateTicker.update();
+#endif
                         TftTicker.update();
                         if (state == "Run") { run_check = true; }
                         if ((state == "Idle") && run_check) { break; }
@@ -98,5 +100,3 @@ void decreaseFactor(){
 void enter() {
         sendCmd("cmd", "START", "START");
 }
-
-// {"msg":"O"}

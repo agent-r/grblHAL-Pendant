@@ -9,7 +9,6 @@
 //   TODO:  -> Multi-Char Numbers in Config (BT Address, BT Pin, hosts) (sprintf ??)
 //          -> More
 //          -> OTA-Uploads ?
-//          -> Get BT running
 //          -> Improve ReadMe !
 //
 /////////////////////////////////////////
@@ -30,11 +29,21 @@
 // 34   BATTERY VOLTAGE DIVIDER
 
 
+#define BLE_ONLY               // disable all Wifi-Functionality
+// TODO: #define WIFI_ONLY
+
 // LIBRARIES
-#include <WiFi.h>                   // WIFI
-#include <WiFiClient.h>             // WIFI
-// #include "BluetoothSerialPatched.h"
-// #include <BluetoothSerial.h>
+#ifndef BLE_ONLY
+        #include <WiFi.h>                   // WIFI
+        #include <WiFiClient.h>             // WIFI
+#endif
+
+#include <BLEDevice.h>
+
+// TO DISABLE BROWNOUT DETECTOR) !!
+#include <soc/soc.h>
+#include <soc/rtc.h>
+
 #include <EEPROM.h>                 // EEPROM
 #include <TickTwo.h>                // TICKER
 
@@ -48,48 +57,65 @@
 #include <analogWrite.h>            // TFT BRIGHTNESS
 #include "fonts.h"                  // FONTS
 #include "driver/adc.h"             // FOR SLEEP !
-#include <esp_wifi.h>               // FOR SLEEP !
-// #include <esp_bt.h>                 // FOR SLEEP !
+#ifndef BLE_ONLY
+        #include <esp_wifi.h>               // FOR SLEEP !
+#endif
 
 // #include <ArduinoOTA.h>             // for Over-The-Air programming
 
-// Needed for Bluetooth SSID-Search. This is not supported in official current arduino/platformio releases
-// comment out, if you use official releases.
-// you have to set BT-MAC-Address manually then.
-// #define USE_NEW_ARDUINO_ESP 1
 
-///////////    DEBUG     ////////////////////////////////////
-#define SERIAL_DEBUG 1          // General messages
-#define SERIAL_DEBUG_IN 0       // Wifi+Blluetooth Inputs
-#define SERIAL_DEBUG_OUT 1      // Wifi+Bluetooth Outputs
+// DEBUG
+#define SERIAL_DEBUG          // General messages
+#define SERIAL_DEBUG_IN       // Wifi+Blluetooth Inputs
+#define SERIAL_DEBUG_OUT      // Wifi+Bluetooth Outputs
+#define MESSAGE_DEBUG         // DEBUG via BLE / Wifi Message
 
 // WiFi & WiFi-AP
 byte ConnectionMode = 0; // 0 = WIFI SLAVE    1 = WIFI AP    2 = BLUETOOTH SLAVE
-WiFiClient TCPClient;
 
-String WifiSSID;
-String WifiPW;
-IPAddress WifiHost(192,168,0,1);
-int WifiPort = 8880;
+#ifndef BLE_ONLY
+        WiFiClient TCPClient;
 
-String APSSID;
-String APPW;
-IPAddress APHost(192,168,0,1);
-int APPort = 8880;
+        String WifiSSID;
+        String WifiPW;
+        IPAddress WifiHost(192,168,0,1);
+        int WifiPort = 8880;
 
-/*
-   // BLUETOOTH
-   // 00:21:13:01:3C:6F -> CNC
-   // 00:21:13:01:2C:C9 -> TEST
-   uint8_t BluetoothHost[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F};
-   const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x2C,0xC9}; // 002113013C6F
-   // const uint8_t BluetoothHostFix[6] = {0x00,0x21,0x13,0x01,0x3C,0x6F}; // 002113013C6F
-   int BluetoothPin = 1234;
-   BluetoothSerial btSerial;
- #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
- #error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
- #endif
- */
+        String APSSID;
+        String APPW;
+        IPAddress APHost(192,168,0,1);
+        int APPort = 8880;
+#endif
+
+// BLUETOOTH
+
+static BLEUUID SERVICE_UUID("825aeb6e-7e1d-4973-9c75-30c042c4770c");
+
+static BLEUUID TX_CMD_CHARACTERISTIC_UUID("24259347-9d86-4c67-a9ae-84f6a7f0c90d");
+static BLEUUID TX_GCODE_CHARACTERISTIC_UUID("604fb9a6-3cd8-48b3-a5c6-04e39f3aeccd");
+static BLEUUID TX_MSG_CHARACTERISTIC_UUID("8a91b1dc-4574-41d4-a1d0-8d1d7488376a");
+
+static BLEUUID RX_STATE_CHARACTERISTIC_UUID("b52e05ac-8a8a-4880-85c7-bd3e6a32dc0e");
+static BLEUUID RX_WX_CHARACTERISTIC_UUID("8261af78-9f01-4525-80ee-30ab576de594");
+static BLEUUID RX_WY_CHARACTERISTIC_UUID("47d8deb4-e094-481c-8cf5-a6ad5b20517c");
+static BLEUUID RX_WZ_CHARACTERISTIC_UUID("210ea555-b93c-4d3b-8615-fd47a90b4526");
+static BLEUUID RX_WA_CHARACTERISTIC_UUID("c3bf023c-45a9-49be-8f66-45600b31287a");
+
+static BLERemoteCharacteristic* Tx_Cmd_Characteristic;
+static BLERemoteCharacteristic* Tx_GCode_Characteristic;
+static BLERemoteCharacteristic* Tx_Msg_Characteristic;
+
+static BLERemoteCharacteristic* Rx_State_Characteristic;
+static BLERemoteCharacteristic* Rx_Wx_Characteristic;
+static BLERemoteCharacteristic* Rx_Wy_Characteristic;
+static BLERemoteCharacteristic* Rx_Wz_Characteristic;
+static BLERemoteCharacteristic* Rx_Wa_Characteristic;
+
+uint8_t BluetoothHost[6];
+uint16_t BluetoothPin;
+static BLEClient* pClient;
+static boolean BLEconnected = false;
+
 
 //EEPROM ADDRESSES
 #define EEConnectionMode 0  //          Byte (1)
@@ -101,8 +127,8 @@ int APPort = 8880;
 #define EEAPPW 97           // bis 126  String (30)
 #define EEAPHost 127        // bis 130  IP (4)
 #define EEAPPort 131        // bis 132  Int (2)
-// #define EEBluetoothHost 133 // bis 138  Adress (6)
-// #define EEBluetoothPin 139  // bis 140  Int (2)
+#define EEBluetoothHost 133 // bis 138  Adress (6)
+#define EEBluetoothPin 139  // bis 140  Int (2)
 #define EEJogSpeed 141      // bis 148  Int (4x2=8) XYZA
 #define EEProbeOffset 149   // bis 152  Float (4)
 #define EEProbeDepth 153    // bis 154  Int (2)
@@ -114,38 +140,24 @@ int APPort = 8880;
 
 
 // ROTARY ENCODER
-/*
- #define ROTARY_ENCODER_A_PIN GPIO_NUM_36
- #define ROTARY_ENCODER_B_PIN GPIO_NUM_39
- #define ROTARY_ENCODER_BUTTON_PIN -1    // -1 if no Button
- #define ROTARY_ENCODER_VCC_PIN -1       // -1 if Vcc -> 3,3V
- #define ROTARY_ENCODER_STEPS 4
-   volatile int rot_clicks = 0;
-   AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, ROTARY_ENCODER_B_PIN, ROTARY_ENCODER_BUTTON_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
-   void IRAM_ATTR readEncoderISR() {
-        rotaryEncoder.readEncoder_ISR();
-   }
- */
 void handleEncoder(void *pvParameters);
 void ESP_ISR callBack(NewEncoder *encPtr, const volatile NewEncoder::EncoderState *state, void *uPtr);
 QueueHandle_t encoderQueue;
-// volatile int16_t prevEncoderValue;
 volatile int16_t EncoderValue = 0;
 
-
-// ESP32Encoder rotaryEncoder;
-#define ENCODER_FPS 4              // Update Rate for Sending Code
+#define ENCODER_FPS 4              // Update Rate for Sending Code // was 5
 void checkEncoder();
 TickTwo EncoderTicker(checkEncoder, (1000 / ENCODER_FPS));
 
 
 // KEYPAD
 #define KEYPAD_PIN GPIO_NUM_33       // ONLY ADC1-PINS !!!
-#define KEYPAD_DEBOUNCE 80       // Debounce for Buttons
+#define KEYPAD_DEBOUNCE 30       // Debounce for Buttons // was 80
 void checkKeypad();
 TickTwo KeypadTicker(checkKeypad, (KEYPAD_DEBOUNCE));
-int keypad_old;
-int keypad_current;
+uint8_t keypad_buffer[4] = {1,0,0,0}; // first int is active buffer number.
+uint8_t keypad_old;
+uint8_t keypad_current;
 
 
 // BATTERY CHECK
@@ -166,9 +178,11 @@ TickTwo SleepTicker(TFTSleep, (60000 * SleepTime)); // 60000
 uint64_t SleepPinMask = 0;
 
 // STATE UPDATES
-#define STATE_FPS 6
-void getState();
-TickTwo StateTicker(getState, (1000 / STATE_FPS));
+#ifndef BLE_ONLY
+        #define STATE_FPS 4 // was 6
+        void getState();
+        TickTwo StateTicker(getState, (1000 / STATE_FPS));
+#endif
 
 // TFT UPDATES
 // TFT PINS ARE DEFINED IN TFT_ESPI -> USER_SETUP.h
@@ -216,20 +230,22 @@ bool blinker_change = true;
 void TFTMessage();
 TickTwo MessageTicker(TFTMessage, (1000 * MESSAGE));
 
-#define HOLD_TIME 2     // SECONDS from the last State. Or HOLD !!!
-void Hold();
-TickTwo HoldTicker(Hold, (1000 * HOLD_TIME));
-bool hold = true;       // wait till connection is REALLY there !
+#ifndef BLE_ONLY
+        #define HOLD_TIME 2     // SECONDS from the last State. Or HOLD !!!
+        void Hold();
+        TickTwo HoldTicker(Hold, (1000 * HOLD_TIME));
+        bool hold = true;       // wait till connection is REALLY there !
 
-#define ALIVE_TIME 1    // Send "OK" !
-void Alive();
-TickTwo AliveTicker(Alive, (1000 * ALIVE_TIME));
+        #define ALIVE_TIME 1    // Send "OK" !
+        void Alive();
+        TickTwo AliveTicker(Alive, (1000 * ALIVE_TIME));
+#endif
 
 //////////////////////////////////////////////////////////////////
 
-uint16_t activeAxis = 0;
+uint8_t activeAxis = 0;
 const String AxisName[4] = {"X", "Y", "Z", "A"};
-const int AxisDir[4] = {1, 1, -1, 1};
+const int8_t AxisDir[4] = {1, 1, -1, 1};
 int JogSpeed[4];
 bool axischange = true;
 
@@ -256,7 +272,7 @@ const String strFactor[5] = {"0.01", "0.10", "1.00", "10.0", "100 "};
 bool factorchange = true;
 
 // WORKSPACE
-int WorkSpace = 54;
+uint8_t WorkSpace = 54;
 
 // PROBE
 float ProbeOffset;     // Height of probe-button (mm/100) = 27.80mm
@@ -272,7 +288,13 @@ bool Probe_Alarm;   // flag to check Alarm
 
 void setup() {
 
+        // DISABLE BROWNOUT DETECTOR
+        WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+
+        #if defined(SERIAL_DEBUG) || defined(SERIAL_DEBUG_IN) || defined(SERIAL_DEBUG_OUT) 
         Serial.begin(115200);
+        #endif
+
         pinMode(KEYPAD_PIN, INPUT);
         pinMode(BATTERY_PIN, INPUT);
         pinMode(TFT_LED, OUTPUT);
@@ -280,11 +302,6 @@ void setup() {
         // ArduinoOTA.begin();
 
         // STARTING ENCODER INTERRUPTS:
-        /*
-           rotaryEncoder.begin();
-           rotaryEncoder.setup(readEncoderISR);
-           rotaryEncoder.disableAcceleration();
-         */
         BaseType_t success = xTaskCreatePinnedToCore(handleEncoder, "Handle Encoder", 1900, NULL, 2, NULL, 1);
         if (!success) {
                 printf("Failed to create handleEncoder task. Aborting.\n");
@@ -293,99 +310,81 @@ void setup() {
                 }
         }
 
+        // tft.begin();
+        // tft.setRotation(tftRotation);
 
-        tft.begin();
-        tft.setRotation(tftRotation);
-
-        if (SERIAL_DEBUG) {Serial.println("------- EEPROM START --------");}
         EEPROM.begin(512);
 
+#ifndef BLE_ONLY
         ConnectionMode = EEPROM.read(EEConnectionMode);
-        if (ConnectionMode == 0) { if (SERIAL_DEBUG) { Serial.println("ConnectionMode: WIFI SLAVE"); }}
-        else if (ConnectionMode == 1) { if (SERIAL_DEBUG) { Serial.println("ConnectionMode: WIFI AP"); } }
-        else if (ConnectionMode == 2) { if (SERIAL_DEBUG) { Serial.println("ConnectionMode: BLUETOOTH SLAVE"); } }
 
         WifiSSID = EepromReadString(EEWifiSSID, 30);
-        if (SERIAL_DEBUG) { Serial.println("Wifi SSID: " + WifiSSID); }
         WifiPW = EepromReadString(EEWifiPW, 30);
-        if (SERIAL_DEBUG) { Serial.println("Wifi PASSWORD: " + WifiPW); }
         WifiHost = EepromReadIP(EEWifiHost);
-        if (SERIAL_DEBUG) { Serial.println ("Wifi HOST: " + String(WifiHost[0]) + "." + String(WifiHost[1]) + "." + String(WifiHost[2]) + "." + String(WifiHost[3]));}
         WifiPort = EepromReadInt(EEWifiPort);
-        if (SERIAL_DEBUG) { Serial.println("Wifi PORT: " + String(WifiPort)); }
 
         APSSID = EepromReadString(EEAPSSID, 30);
-        if (SERIAL_DEBUG) { Serial.println("AP SSID: " + APSSID); }
         APPW = EepromReadString(EEAPPW, 30);
-        if (SERIAL_DEBUG) { Serial.println("AP PASSWORD: " + APPW); }
         APHost = EepromReadIP(EEAPHost);
-        if (SERIAL_DEBUG) { Serial.println ("AP HOST: " + String(APHost[0]) + "." + String(APHost[1]) + "." + String(APHost[2]) + "." + String(APHost[3]));}
         APPort = EepromReadInt(EEAPPort);
-        if (SERIAL_DEBUG) { Serial.println("AP PORT: " + String(APPort)); }
+#endif
 
-        /*
-           BluetoothHost[0] = EEPROM.read(EEBluetoothHost); BluetoothHost[1] = EEPROM.read(EEBluetoothHost+1); BluetoothHost[2] = EEPROM.read(EEBluetoothHost+2); BluetoothHost[3] = EEPROM.read(EEBluetoothHost+3); BluetoothHost[4] = EEPROM.read(EEBluetoothHost+4); BluetoothHost[5] = EEPROM.read(EEBluetoothHost+5);
-           if (SERIAL_DEBUG) { Serial.println("Bluetooth Host Address: " + String(BluetoothHost[0], HEX) + ":" + String(BluetoothHost[1], HEX) + ":" + String(BluetoothHost[2], HEX) + ":" + String(BluetoothHost[3], HEX) + ":" + String(BluetoothHost[4], HEX) + ":" + String(BluetoothHost[5], HEX)); }
-           BluetoothPin = EepromReadInt(EEBluetoothPin);
-           if (SERIAL_DEBUG) { Serial.println("Bluetooth Pin: " + String(BluetoothPin)); }
-         */
+        BluetoothHost[0] = EEPROM.read(EEBluetoothHost); BluetoothHost[1] = EEPROM.read(EEBluetoothHost+1); BluetoothHost[2] = EEPROM.read(EEBluetoothHost+2); BluetoothHost[3] = EEPROM.read(EEBluetoothHost+3); BluetoothHost[4] = EEPROM.read(EEBluetoothHost+4); BluetoothHost[5] = EEPROM.read(EEBluetoothHost+5);
+        BluetoothPin = EepromReadInt(EEBluetoothPin);
 
         JogSpeed[0] = EepromReadInt(EEJogSpeed);
-        if (SERIAL_DEBUG) { Serial.println("X JOG SPEED: " + String(JogSpeed[0])); }
-        JogSpeed[1] = EepromReadInt(EEJogSpeed+1);
-        if (SERIAL_DEBUG) { Serial.println("Y JOG SPEED: " + String(JogSpeed[1])); }
-        JogSpeed[2] = EepromReadInt(EEJogSpeed+2);
-        if (SERIAL_DEBUG) { Serial.println("Z JOG SPEED: " + String(JogSpeed[2])); }
-        JogSpeed[3] = EepromReadInt(EEJogSpeed+3);
-        if (SERIAL_DEBUG) { Serial.println("A JOG SPEED: " + String(JogSpeed[3])); }
+        JogSpeed[1] = EepromReadInt(EEJogSpeed+2);
+        JogSpeed[2] = EepromReadInt(EEJogSpeed+4);
+        JogSpeed[3] = EepromReadInt(EEJogSpeed+6);
 
         ProbeOffset = EepromReadFloat(EEProbeOffset);
-        if (SERIAL_DEBUG) { Serial.println("PROBE OFFSET: " + String(ProbeOffset)); }
         ProbeDepth = EepromReadInt(EEProbeDepth);
         if (ProbeDepth > 32767) { ProbeDepth = ProbeDepth - 65536; }
-        if (SERIAL_DEBUG) { Serial.println("PROBE DEPTH: " + String(ProbeDepth)); }
         ProbeSpeed = EepromReadInt(EEProbeSpeed);
-        if (SERIAL_DEBUG) { Serial.println("PROBE SPEED: " + String(ProbeSpeed)); }
         ProbeBackHeight = EEPROM.read(EEProbeBackHeight);
-        if (SERIAL_DEBUG) { Serial.println("PROBE RISE: " + String(ProbeBackHeight)); }
         ProbeTime = EEPROM.read(EEProbeTime);
-        if (SERIAL_DEBUG) { Serial.println("PROBE TIME: " + String(ProbeBackHeight)); }
 
         SleepTime = EEPROM.read(EESleepTime);
         SleepTicker.interval(SleepTime * 60000);
-        if (SERIAL_DEBUG) { Serial.println("SLEEP TIME: " + String(SleepTime) + "min"); }
 
         TFT_BRIGHTNESS = EEPROM.read(EEBrightness);
-        analogWrite(TFT_LED, TFT_BRIGHTNESS); // TURN LIGHT ON
-        if (SERIAL_DEBUG) { Serial.println("BRIGHTNESS: " + String(TFT_BRIGHTNESS)); }
 
-        if (SERIAL_DEBUG) {Serial.println("-------- EEPROM END ---------");}
 
-        // STARTING INTERRUPTS !
+        ConnectionSetup();
+
+        // start TFT after Connection setup. sometimes stays black otherwise...
+        tft.begin();
+        tft.setRotation(tftRotation);
+        analogWrite(TFT_LED, TFT_BRIGHTNESS);
+        TFTPrepare();
+
+        if (checkConfig()) { config(); } // Start config routine
+
+        Connect();
+
+        // STARTING TICKERS !
+#ifndef BLE_ONLY
         StateTicker.start();
+#endif
         TftTicker.start();
         if (SleepTime > 0) { SleepTicker.start(); }
         KeypadTicker.start();
         EncoderTicker.start();
-        AliveTicker.start();
+        // AliveTicker.start();
         // BatteryTicker.start();
         // BlinkTicker.start();
 
-        if (checkConfig()) { config(); } // Start config routine
-
-        TFTPrepare();
-        ConnectionSetup();
-        Connect();
-
+        pendantInit();
 }
 
 //////////////////////////////////////////////////////////////////
 
 
-
 void loop() {
         // ArduinoOTA.handle();
+#ifndef BLE_ONLY
         StateTicker.update();
+#endif
         TftTicker.update();
         EncoderTicker.update();
         KeypadTicker.update();
@@ -393,6 +392,52 @@ void loop() {
         // BlinkTicker.update();  // used only within config-loops
         MessageTicker.update();
         SleepTicker.update();
+#ifndef BLE_ONLY
         HoldTicker.update();
         AliveTicker.update();
+#endif
+}
+
+
+void pendantInit() {
+
+        debug("[PENDANT] started & connected");
+
+        #ifdef SERIAL_DEBUG 
+
+                Serial.println("[PENDANT] ------- EEPROM DATA ---------");
+                if (ConnectionMode == 0) { Serial.println("[PENDANT] ConnectionMode: WIFI SLAVE"); }
+                else if (ConnectionMode == 1) { Serial.println("[PENDANT] ConnectionMode: WIFI AP"); }
+                else if (ConnectionMode == 2) { Serial.println("[PENDANT] ConnectionMode: BLUETOOTH SLAVE"); }
+
+                // Serial.println("[PENDANT] Wifi SSID: " + WifiSSID);
+                // Serial.println("[PENDANT] Wifi PASSWORD: " + WifiPW);
+                // Serial.println("[PENDANT] Wifi HOST: " + String(WifiHost[0]) + "." + String(WifiHost[1]) + "." + String(WifiHost[2]) + "." + String(WifiHost[3]));
+                // Serial.println("[PENDANT] Wifi PORT: " + String(WifiPort));
+
+                // Serial.println("[PENDANT] AP SSID: " + APSSID);
+                // Serial.println("[PENDANT] AP PASSWORD: " + APPW);
+                // Serial.println("[PENDANT] AP HOST: " + String(APHost[0]) + "." + String(APHost[1]) + "." + String(APHost[2]) + "." + String(APHost[3]));
+                // Serial.println("[PENDANT] AP PORT: " + String(APPort));
+
+                // Serial.println("[PENDANT] BLE HOST: " + String(BluetoothHost[0], HEX) + ":" + String(BluetoothHost[1], HEX) + ":" + String(BluetoothHost[2], HEX) + ":" + String(BluetoothHost[3], HEX) + ":" + String(BluetoothHost[4], HEX) + ":" + String(BluetoothHost[5], HEX));
+                // Serial.println("[PENDANT] BLE PIN: " + String(BluetoothPin));
+
+                Serial.println("[PENDANT] X JOG SPEED: " + String(JogSpeed[0]));
+                Serial.println("[PENDANT] Y JOG SPEED: " + String(JogSpeed[1]));
+                Serial.println("[PENDANT] Z JOG SPEED: " + String(JogSpeed[2]));
+                Serial.println("[PENDANT] A JOG SPEED: " + String(JogSpeed[3]));
+
+                Serial.println("[PENDANT] PROBE OFFSET: " + String(ProbeOffset));
+                Serial.println("[PENDANT] PROBE DEPTH: " + String(ProbeDepth));
+                Serial.println("[PENDANT] PROBE SPEED: " + String(ProbeSpeed));
+                Serial.println("[PENDANT] PROBE RISE: " + String(ProbeBackHeight));
+                Serial.println("[PENDANT] PROBE TIME: " + String(ProbeTime));
+
+                Serial.println("[PENDANT] SLEEP TIME: " + String(SleepTime) + "min");
+                Serial.println("[PENDANT] BRIGHTNESS: " + String(TFT_BRIGHTNESS));
+
+                Serial.println("[PENDANT] -------- EEPROM END ---------");
+
+        #endif
 }

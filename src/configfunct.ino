@@ -183,7 +183,7 @@ int TFTConfigStringCharPosY(int Position) {
         else if (Position == 130) { return(67 + (ROWHEIGHT*9)); }
 }
 
-
+#ifndef BLE_ONLY
 IPAddress TFTConfigIP (const String Title, IPAddress newIP) {
         byte activeByte = 0;
         String strIP;
@@ -246,6 +246,7 @@ IPAddress TFTConfigIP (const String Title, IPAddress newIP) {
                 }
         }
 }
+#endif
 
 
 void TFTConfigInfo(const String* Content, const int Length) {

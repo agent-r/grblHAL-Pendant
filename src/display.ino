@@ -19,8 +19,6 @@ const int Line[4] = {0,234,240};
 
 void TFTUpdate() {
 
-        // getState();
-
         if (wxchange || axischange) {
                 char strwx[7];
                 dtostrf(wx,7,2,strwx);
@@ -80,27 +78,30 @@ void TFTSleep() {
         // TftTicker.stop();
         //etc.
 
-        if (SERIAL_DEBUG) {Serial.println("GO TO SLEEP...");}
+        debug("[PENDANT] sleep");
+        
         // Turn off TFT
         analogWrite(TFT_LED, 0);
         tft.fillRect(0,0,240,320, ILI9341_WHITE);
+
         // Stop WIFI
-        TCPClient.stop();
-        WiFi.disconnect(true);
-        WiFi.mode(WIFI_OFF);
-        esp_wifi_stop();
+        // TCPClient.stop();
+        // WiFi.disconnect(true);
+        // WiFi.mode(WIFI_OFF);
+        // esp_wifi_stop();
+
+        // Stop BLE
+        // pClient->disconnect();
+
+        // Disconnect all !
+        
+        Disconnect(true, true);
+
         adc_power_off();
-        // Stop Bluetooth
-        /*
-           btSerial.end();
-           esp_bt_controller_disable();
-           esp_bt_controller_deinit();
-         */
+
         // wait a moment for connections to close...
-        delay(1500);
-        // Set Wakeup Pins
-//        bitSet64(SleepPinMask, ROTARY_ENCODER_A_PIN);
-//        bitSet64(SleepPinMask, ROTARY_ENCODER_B_PIN);
+        delay(200);
+
         bitSet64(SleepPinMask, CORE_INT36_PIN);
         bitSet64(SleepPinMask, CORE_INT39_PIN);
         bitSet64(SleepPinMask, KEYPAD_PIN);
@@ -108,19 +109,26 @@ void TFTSleep() {
         // GoTo Sleep
         esp_light_sleep_start();
         // esp_deep_sleep_start();  // DOES REBOOT... Why? Normal=
+
         // WakeUp Routine:
+        delay(200);
+
         adc_power_on();
-        ConnectionSetup();
-        if (SERIAL_DEBUG) { Serial.println("... WAKE UP"); }
+
         wxchange = true; wychange = true; wzchange = true, wachange = true; statechange = true;
-        // rotaryEncoder.clearCount();
-        // rotaryEncoder.reset();
         EncoderValue = 0;
+
+        ConnectionSetup();
+        Connect();
+
         analogWrite(TFT_LED, TFT_BRIGHTNESS);
         TFTPrepare();
-        if (SleepTime > 0 ) {SleepTicker.start();}
+
+        if (SleepTime > 0) {SleepTicker.start();}
         // StateTicker.start();
         // TftTicker.start();
+
+        debug("[PENDANT] wake up");
 }
 
 
@@ -148,6 +156,7 @@ void TFTSetFontSize(const int size) {
 
 
 void TFTPrepare() {
+
         tft.fillRect(0,0,240,320,TFT_COLOR_BGR);
         for (int i = 0; i <= 6; i++) {
                 tft.drawRect(Fields[i][0]-1,Fields[i][1]-1,Fields[i][2]+2,Fields[i][3]+2,TFT_COLOR_FRM_LIN);
@@ -155,6 +164,7 @@ void TFTPrepare() {
         tft.drawFastHLine(Line[0],Line[1],Line[2],TFT_COLOR_FRM_LIN);
         TFTClear();
 }
+
 
 void TFTClear() {
         for (int i = 0; i <= 6; i++) {

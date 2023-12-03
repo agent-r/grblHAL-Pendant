@@ -40,6 +40,8 @@ void EepromWriteFloat(float Write, int Start) {
         EEPROM.commit();
 }
 
+
+#ifndef BLE_ONLY
 IPAddress EepromReadIP(int Start) {
         IPAddress Result;
         for (int i = 0; i < 4; i++) {
@@ -47,10 +49,14 @@ IPAddress EepromReadIP(int Start) {
         }
         return(Result);
 }
+#endif
 
+
+#ifndef BLE_ONLY
 void EepromWriteIP(IPAddress Write, int Start) {
         for (int i = 0; i < 4; i++) {
                 EEPROM.write(Start+i, Write[i]);
         }
         EEPROM.commit();
 }
+#endif
