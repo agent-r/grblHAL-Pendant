@@ -104,7 +104,10 @@ void TFTSleep() {
 
         bitSet64(SleepPinMask, CORE_INT36_PIN);
         bitSet64(SleepPinMask, CORE_INT39_PIN);
-        bitSet64(SleepPinMask, KEYPAD_PIN);
+        bitSet64(SleepPinMask, BUTTON_0_PIN);
+        bitSet64(SleepPinMask, BUTTON_1_PIN);
+        bitSet64(SleepPinMask, BUTTON_2_PIN);
+        // TODO !
         esp_sleep_enable_ext1_wakeup(SleepPinMask, ESP_EXT1_WAKEUP_ANY_HIGH);
         // GoTo Sleep
         esp_light_sleep_start();

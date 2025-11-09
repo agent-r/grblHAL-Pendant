@@ -18,7 +18,18 @@
 ////////////////////////////////////////
 // 36   ROT CLK : A
 // 39   ROT DT  : B
-// 33   KEY SIG
+// 32   KEY AX-
+// 33   KEY AX+
+// 05   KEY SET0
+// 25   KEY GOTO0
+// 26   KEY PROBE
+// 27   KEY CONFIG
+// 14   KEY FEED-
+// 13   KEY FEED+
+// 16   KEY HOME
+// 04   KEY STOP
+// 02   KEY RESET
+// 15   KEY ENTER
 // 21   TFT DC
 // 18   TFT SCK
 // --   TFT MISO
@@ -47,10 +58,12 @@
 #include <EEPROM.h>                 // EEPROM
 #include <TickTwo.h>                // TICKER
 
-//#include "AiEsp32RotaryEncoder.h"   // ROTARY ENCODER
-#include <NewEncoder.h>
-
+//#include "AiEsp32RotaryEncoder.h"   
+#include <NewEncoder.h>             // ROTARY ENCODER
 // #include "ESP32Encoder.h"
+
+#include <JC_Button.h>              // BUTTON CHECKER
+
 #include <ArduinoJson.h>            // JSON
 #include <SPI.h>                    // TFT
 #include <TFT_eSPI.h>               // TFT
@@ -151,8 +164,36 @@ TickTwo EncoderTicker(checkEncoder, (1000 / ENCODER_FPS));
 
 
 // KEYPAD
-#define KEYPAD_PIN GPIO_NUM_33       // ONLY ADC1-PINS !!!
-#define KEYPAD_DEBOUNCE 30       // Debounce for Buttons // was 80
+#define BUTTON_DEBOUNCE_TIME 30
+#define BUTTON_0_PIN 32         // AX-        
+#define BUTTON_1_PIN 33         // AX+         
+#define BUTTON_2_PIN 5         // SET0
+#define BUTTON_3_PIN 25         // GOTO0
+#define BUTTON_4_PIN 26         // PROBE
+#define BUTTON_5_PIN 27         // CONFIG
+#define BUTTON_6_PIN 14         // FEED-
+#define BUTTON_7_PIN 13         // FEED+
+#define BUTTON_8_PIN 16         // HOME
+#define BUTTON_9_PIN 4          // STOP      
+#define BUTTON_10_PIN 2         // RESET
+#define BUTTON_11_PIN 15        // ENTER
+
+Button Button0(BUTTON_0_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button1(BUTTON_1_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button2(BUTTON_2_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button3(BUTTON_3_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button4(BUTTON_4_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button5(BUTTON_5_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button6(BUTTON_6_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button7(BUTTON_7_PIN, BUTTON_DEBOUNCE_TIME); 
+Button Button8(BUTTON_8_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button9(BUTTON_9_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button10(BUTTON_10_PIN, BUTTON_DEBOUNCE_TIME);
+Button Button11(BUTTON_11_PIN, BUTTON_DEBOUNCE_TIME);
+
+
+// #define KEYPAD_PIN GPIO_NUM_33       // ONLY ADC1-PINS !!!
+#define KEYPAD_DEBOUNCE 10               // Debounce for Buttons // was 80
 void checkKeypad();
 TickTwo KeypadTicker(checkKeypad, (KEYPAD_DEBOUNCE));
 uint8_t keypad_buffer[4] = {1,0,0,0}; // first int is active buffer number.
@@ -161,11 +202,11 @@ uint8_t keypad_current;
 
 
 // BATTERY CHECK
-#define BATTERY_PIN GPIO_NUM_34
-#define BATTERY_FACTOR 0.001736
-#define BATTERY_LOW 3.35
-#define BATTERY_HIGH 4.2
-#define BATTERYCHECK 60    // Seconds
+// #define BATTERY_PIN GPIO_NUM_34
+// #define BATTERY_FACTOR 0.001736
+// #define BATTERY_LOW 3.35
+// #define BATTERY_HIGH 4.2
+// #define BATTERYCHECK 60    // Seconds
 // void checkBattery();
 // TickTwo BatteryTicker(checkBattery, (1000 * BATTERYCHECK));
 
@@ -295,8 +336,21 @@ void setup() {
         Serial.begin(115200);
         #endif
 
-        pinMode(KEYPAD_PIN, INPUT);
-        pinMode(BATTERY_PIN, INPUT);
+        // pinMode(KEYPAD_PIN, INPUT);
+        Button0.begin();              // initialize the button object
+        Button1.begin();              // initialize the button object
+        Button2.begin();              // initialize the button object
+        Button3.begin();              // initialize the button object
+        Button4.begin();              // initialize the button object
+        Button5.begin();              // initialize the button object
+        Button6.begin();              // initialize the button object
+        Button7.begin();              // initialize the button object
+        Button8.begin();              // initialize the button object
+        Button9.begin();              // initialize the button object
+        Button10.begin();              // initialize the button object
+        Button11.begin();              // initialize the button object
+
+        // pinMode(BATTERY_PIN, INPUT);
         pinMode(TFT_LED, OUTPUT);
 
         // ArduinoOTA.begin();
@@ -388,6 +442,7 @@ void loop() {
         TftTicker.update();
         EncoderTicker.update();
         KeypadTicker.update();
+        
         // BatteryTicker.update();
         // BlinkTicker.update();  // used only within config-loops
         MessageTicker.update();
