@@ -13,7 +13,6 @@
 //
 /////////////////////////////////////////
 
-
 // PINS
 ////////////////////////////////////////
 // 36   ROT CLK : A
@@ -37,7 +36,7 @@
 // 22   TFT CS
 // 17   TFT LED
 // VCC  TFT RESET
-// 34   BATTERY VOLTAGE DIVIDER
+// 34   BATTERY VOLTAGE DIVIDER // NOT USED!
 
 
 #define BLE_ONLY               // disable all Wifi-Functionality
@@ -47,13 +46,16 @@
 #ifndef BLE_ONLY
         #include <WiFi.h>                   // WIFI
         #include <WiFiClient.h>             // WIFI
+        #include <esp_wifi.h>
 #endif
+// #include <ArduinoOTA.h>             // for Over-The-Air programming
+
+// #include <Ardunio.h>
 
 #include <BLEDevice.h>
 
-// TO DISABLE BROWNOUT DETECTOR) !!
-#include <soc/soc.h>
-#include <soc/rtc.h>
+#include <soc/soc.h>                    // TO DISABLE BROWNOUT DETECTOR) !!
+#include <soc/rtc.h>                    // TO DISABLE BROWNOUT DETECTOR) !!
 
 #include <EEPROM.h>                 // EEPROM
 #include <TickTwo.h>                // TICKER
@@ -65,17 +67,12 @@
 #include <JC_Button.h>              // BUTTON CHECKER
 
 #include <ArduinoJson.h>            // JSON
+
 #include <SPI.h>                    // TFT
 #include <TFT_eSPI.h>               // TFT
-#include <analogWrite.h>            // TFT BRIGHTNESS
+// #include <analogWrite.h>         // TFT BRIGHTNESS
 #include "fonts.h"                  // FONTS
 #include "driver/adc.h"             // FOR SLEEP !
-#ifndef BLE_ONLY
-        #include <esp_wifi.h>               // FOR SLEEP !
-#endif
-
-// #include <ArduinoOTA.h>             // for Over-The-Air programming
-
 
 // DEBUG
 #define SERIAL_DEBUG          // General messages
@@ -153,6 +150,9 @@ static boolean BLEconnected = false;
 
 
 // ROTARY ENCODER
+#define ENCODER_PIN_A 36
+#define ENCODER_PIN_B 39
+
 void handleEncoder(void *pvParameters);
 void ESP_ISR callBack(NewEncoder *encPtr, const volatile NewEncoder::EncoderState *state, void *uPtr);
 QueueHandle_t encoderQueue;

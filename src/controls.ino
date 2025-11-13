@@ -19,7 +19,7 @@ void handleEncoder(void *pvParameters) {
 
         // Use FULL_PULSE for encoders that produce one complete quadrature pulse per detnet, such as: https://www.adafruit.com/product/377
         // Use HALF_PULSE for endoders that produce one complete quadrature pulse for every two detents, such as: https://www.mouser.com/ProductDetail/alps/ec11e15244g1/?qs=YMSFtX0bdJDiV4LBO61anw==&countrycode=US&currencycode=USD
-        NewEncoder *encoder1 = new NewEncoder(CORE_INT36_PIN, CORE_INT39_PIN, ENCODER_MIN, ENCODER_MAX, 0, HALF_PULSE);
+        NewEncoder *encoder1 = new NewEncoder(ENCODER_PIN_A, ENCODER_PIN_B, ENCODER_MIN, ENCODER_MAX, 0, HALF_PULSE);
         if (encoder1 == nullptr) {
                 vTaskDelete(nullptr);
         }

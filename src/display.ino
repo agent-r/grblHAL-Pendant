@@ -102,12 +102,21 @@ void TFTSleep() {
         // wait a moment for connections to close...
         delay(200);
 
-        bitSet64(SleepPinMask, CORE_INT36_PIN);
-        bitSet64(SleepPinMask, CORE_INT39_PIN);
+        bitSet64(SleepPinMask, ENCODER_PIN_A);
+        bitSet64(SleepPinMask, ENCODER_PIN_B);
         bitSet64(SleepPinMask, BUTTON_0_PIN);
         bitSet64(SleepPinMask, BUTTON_1_PIN);
         bitSet64(SleepPinMask, BUTTON_2_PIN);
-        // TODO !
+        bitSet64(SleepPinMask, BUTTON_3_PIN);
+        bitSet64(SleepPinMask, BUTTON_4_PIN);
+        bitSet64(SleepPinMask, BUTTON_5_PIN);
+        bitSet64(SleepPinMask, BUTTON_6_PIN);
+        bitSet64(SleepPinMask, BUTTON_7_PIN);
+        bitSet64(SleepPinMask, BUTTON_8_PIN);
+        bitSet64(SleepPinMask, BUTTON_9_PIN);
+        bitSet64(SleepPinMask, BUTTON_10_PIN);
+        bitSet64(SleepPinMask, BUTTON_11_PIN);
+
         esp_sleep_enable_ext1_wakeup(SleepPinMask, ESP_EXT1_WAKEUP_ANY_HIGH);
         // GoTo Sleep
         esp_light_sleep_start();
