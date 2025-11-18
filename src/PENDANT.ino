@@ -233,6 +233,7 @@ uint64_t SleepPinMask = 0;
 // #define TFT_CS 22       //
 // #define TFT_RST 4       // TO VCC !!!
 #define TFT_LED GPIO_NUM_17
+
 TFT_eSPI tft = TFT_eSPI();
 #define TFT_FPS 5         // was 10
 void TFTUpdate();
@@ -403,13 +404,12 @@ void setup() {
 
         TFT_BRIGHTNESS = EEPROM.read(EEBrightness);
 
-
         ConnectionSetup();
 
         // start TFT after Connection setup. sometimes stays black otherwise...
         tft.begin();
         tft.setRotation(tftRotation);
-        analogWrite(TFT_LED, TFT_BRIGHTNESS);
+        analogWrite(TFT_LED, TFT_BRIGHTNESS); 
         TFTPrepare();
 
         if (checkConfig()) { config(); } // Start config routine
