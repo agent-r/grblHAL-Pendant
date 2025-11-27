@@ -219,6 +219,7 @@ bool checkConfig() {
 
         Button5.read();
         if (Button5.wasReleased()) { return(true); }
+        else if (Button5.isPressed()) { return(true); }
         else { return(false); }
 
         /*
