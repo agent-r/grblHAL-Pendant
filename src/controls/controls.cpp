@@ -51,7 +51,7 @@ static void handleEncoder(void* pvParameters) {
     configASSERT(encoderQueue);
 
     // Encoder initialisieren
-    NewEncoder* encoder1 = new NewEncoder(ENCODER_PIN_A, ENCODER_PIN_B, ENCODER_MIN, ENCODER_MAX, 0, FULL_PULSE); // HALF_PULSE
+    NewEncoder* encoder1 = new NewEncoder(ENCODER_PIN_A, ENCODER_PIN_B, ENCODER_MIN, ENCODER_MAX, 0, HALF_PULSE); // HALF_PULSE or FULL_PULSE
     if (!encoder1->begin()) {
         delete encoder1;
         vTaskDelete(nullptr);
@@ -65,7 +65,7 @@ static void handleEncoder(void* pvParameters) {
         if (xQueueReceive(encoderQueue, &newState, portMAX_DELAY)) {
             // Delta seit letztem Reset ermitteln und Encoder auf 0 zurücksetzen
             if (encoder1->getAndSet(0, oldState, newState)) {
-                EncoderValue = oldState.currentValue;   // Änderung seit letztem Mal
+                EncoderValue = -oldState.currentValue;   // Änderung seit letztem Mal
             }
         }
     }

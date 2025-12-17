@@ -21,13 +21,13 @@ BLEClient *pClient = nullptr;
 
 // Callback When the BLE Bridge sends a new state
 static void Rx_NotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
-        char* Rx = (char*)pData;
-        String Rx_str = String(Rx);
+
+//        char* Rx = (char*)pData;
+//        String Rx_str = String(Rx);
+
+        String Rx_str((char*)pData, length);
         bluetoothParse(Rx_str);
 
-        /*
-        state = state.substring(0, state.indexOf('\n'));
-        */
 }
 
 
@@ -122,13 +122,14 @@ void bluetoothDisconnect() {
 
 void bluetoothParse(String& JsonString) {
 
+        debug("[PENDANT] RECEIVED:    " + JsonString);
+
         // DynamicJsonDocument JsonIn(128); // deprecated
         JsonDocument JsonIn;
         DeserializationError error = deserializeJson(JsonIn, JsonString);
 
         if (error) {
-                debug("[PENDANT] WARNING: DESERIALIZATION ERROR");
-                // debug("[PENDANT] " + String(error.f_str()));
+                debug("[PENDANT] WARNING: DESERIALIZATION ERROR:   " + String(error.f_str()));
         }
         else {
                 // if (JsonIn.containsKey("wx")) {  is<JsonVariant>()
@@ -157,7 +158,7 @@ void bluetoothParse(String& JsonString) {
                 }
                 
                 #ifdef SERIAL_DEBUG_IN
-                        Serial.println("WX:" + String(wx) + "  WY:" + String(wy) + "  WZ:" + String(wz) + "  WA:" + String(wa) + "  STATE:" + state);
+                        debug("[PENDANT] RECEIVED & PARSED:   WX: " + String(wx) + "   WY: " + String(wy) + "   WZ: " + String(wz) + "   WA: " + String(wa) + "   STATE: " + state);
                 #endif
         }
 }

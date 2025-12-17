@@ -11,9 +11,9 @@
 
 // DEBUG
 #define SERIAL_DEBUG          // General messages
-#define SERIAL_DEBUG_IN       // Wifi+Blluetooth Inputs
-#define SERIAL_DEBUG_OUT      // Wifi+Bluetooth Outputs
-#define MESSAGE_DEBUG         // DEBUG via BLE / Wifi Message
+#define SERIAL_DEBUG_IN       // Bluetooth Inputs
+#define SERIAL_DEBUG_OUT      // Bluetooth Outputs
+// #define MESSAGE_DEBUG         // DEBUG via BLE / Wifi Message
 
 // ROTARY ENCODER
 #define ENCODER_PIN_A 36
