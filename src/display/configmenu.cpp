@@ -3,10 +3,21 @@
 ///////////////////////      CONFIG      //////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
+#include <Arduino.h>
+#include "display/configfunct.h"
+#include "display/configmenu.h"
+#include "display/display.h"
+#include "global.h"
+#include "communication/bluetooth.h"
+#include "controls/controls.h"
+#include "communication/debug.h"
+#include "config.h"
+
 const int ConfigForms[2][5] = {
         {10, 15, 220, 35, 3},  // Field Heading
         {10, 60, 220, 250, 2}  // Field Content
 };
+
 const int ConfigFields[12][5] = {
         {10, 17, 220, 33, 3},  // HEADING
         {10, 62, 220, 22, 2},  // CONTENT
@@ -24,10 +35,6 @@ const int ConfigFields[12][5] = {
 
 
 void config() {
-
-#ifndef BLE_ONLY
-        Disconnect(true, true);
-#endif
 
         const byte ContentNum = 10;
         const String Content[ContentNum] = {
@@ -54,84 +61,33 @@ void config() {
                 case 7: configBattery(); break;
                 case 8: configInfo(); break;
                 // case 9: configOTA(); break;
-                case 9: TFTPrepare(); ConnectionSetup(); return;
+                case 9: configSave(); TFTPrepare(); bluetoothInit(); return;
                 }
         }
 }
 
 void configConnection() {
+
         const byte ContentNum = 4;
         const String Content[ContentNum] = {
                 "Connection",
-#ifdef BLE_ONLY
                 "Bluetooth only",
-#else
-                "Connection Mode",
-#endif
                 "Connection Settings",
                 "Back"
         };
         while(true) {
                 switch (TFTConfigMenu(Content, ContentNum)) {
-#ifdef BLE_ONLY
                 case 1: break;
-#else
-                case 1: configConnectionMode(); break;
-#endif
                 case 2: configConnectionSettings(); break;
                 case 3: return;
                 }
         }
 }
 
-#ifndef BLE_ONLY
-void configConnectionMode() {
-        const byte ContentNum = 5;
-        String Content[ContentNum] = {
-                "Connect Mode",
-                "WIFI Slave",
-                "WIFI AP",
-                "BLUETOOTH Slave",
-                "Back"
-        };
-        ConnectionMode = EEPROM.read(EEConnectionMode);
-        // while(true) {
-        switch (TFTConfigMenu(Content, ContentNum)) {
-        case 1: ConnectionMode = 0; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
-        case 2: ConnectionMode = 1; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
-        case 3: ConnectionMode = 2; break;                // EEPROM.write(112, ConnectionMode); EEPROM.commit(); return;
-        case 4: return;
-        }
-        debug("CONFIG : ConnectionMode : " + String(ConnectionMode));
-        EEPROM.write(EEConnectionMode, ConnectionMode); EEPROM.commit();
-        ConnectionSetup();
-        // }
-}
-#endif
 
 
 void configConnectionSettings() {
 
-#ifndef BLE_ONLY
-        const byte ContentNumWifi = 6;
-        const String ContentWifi[ContentNumWifi] = {
-                "WiFi",
-                "WiFi SSID",
-                "WiFi Password",
-                "WiFi Host IP",
-                "WiFi Host Port",
-                "Back"
-        };
-        const byte ContentNumAP = 6;
-        const String ContentAP[ContentNumAP] = {
-                "WiFi AP",
-                "AP SSID",
-                "AP Password",
-                "AP Host IP",
-                "AP Host Port",
-                "Back"
-        };
-#endif
         const byte ContentNumBluetooth = 4;
         const String ContentBluetooth[ContentNumBluetooth] = {
                 "Bluetooth",
@@ -141,30 +97,6 @@ void configConnectionSettings() {
                 "Back"
         };
 
-#ifndef BLE_ONLY
-        switch (ConnectionMode) {
-        case 0:
-                while(true) {
-                        switch (TFTConfigMenu(ContentWifi, ContentNumWifi)) {
-                                case 1: configWifiSSID(); break;
-                                case 2: configWifiPW(); break;
-                                case 3: configWifiHost(); break;
-                                case 4: configWifiPort(); break;
-                                case 5: return;
-                        }
-                }
-        case 1:
-                while(true) {
-                        switch (TFTConfigMenu(ContentAP, ContentNumAP)) {
-                                case 1: configAPSSID(); break;
-                                case 2: configAPPW(); break;
-                                case 3: configAPHost(); break;
-                                case 4: configAPPort(); break;
-                                case 5: return;
-                        }
-                }
-                   case 2:
-#endif
                    while(true) {
                         switch (TFTConfigMenu(ContentBluetooth, ContentNumBluetooth)) {
                                 case 1: configBLE(); break;
@@ -173,117 +105,18 @@ void configConnectionSettings() {
                                 case 3: return;
                         }
                    }
-#ifndef BLE_ONLY
-        }
-#endif
 }
 
 
-#ifndef BLE_ONLY
-void configWifiSSID() {
- #define MaxSSIDs 10
-        String SSIDs[MaxSSIDs+1];
-        int numberOfNetworks = WiFi.scanNetworks();
-        if (numberOfNetworks > MaxSSIDs) { numberOfNetworks = MaxSSIDs; }
-        int Selection;
 
-        SSIDs[0] = "Wifi SSID";
-        for(int i = 1; i <= numberOfNetworks; i++) {
-                SSIDs[i] = WiFi.SSID(i-1);
-        }
-        SSIDs[numberOfNetworks + 1] = "Back";
-        for (int i = numberOfNetworks + 2; i <= MaxSSIDs; i++) {
-                SSIDs[i] = "";
-        }
-
-        Selection = TFTConfigMenu(SSIDs, numberOfNetworks + 2);
-
-        if (Selection <= numberOfNetworks) {
-                WifiSSID = WiFi.SSID(Selection - 1);
-                debug("CONFIG : WifiSSID : " + WifiSSID);
-                EepromWriteString(WifiSSID, EEWifiSSID, 30);
-        }
-        else if (Selection == numberOfNetworks+1) {
-                return;
-        }
-}
-#endif
-
-
-#ifndef BLE_ONLY
-void configWifiPW() {
-        WifiPW = EepromReadString(EEWifiPW, 30);
-        WifiPW = TFTConfigString("Wifi Password", WifiPW);
-        debug("CONFIG : WifiPW : \"" + WifiPW + "\"");
-        EepromWriteString(WifiPW, EEWifiPW, 30);
-}
-#endif
-
-
-#ifndef BLE_ONLY
-void configWifiHost() {
-        WifiHost = EepromReadIP(EEWifiHost);
-        WifiHost = TFTConfigIP("Wifi Host", WifiHost);
-        debug("CONFIG : WifiHost : " + String(WifiHost[0]) + "." + String(WifiHost[1]) + "." + String(WifiHost[2]) + "." + String(WifiHost[3]));
-        EepromWriteIP(WifiHost, EEWifiHost);
-}
-#endif
-
-
-#ifndef BLE_ONLY
-void configWifiPort() {
-        WifiPort = EepromReadInt(EEWifiPort);
-        WifiPort = TFTConfigValue("Wifi Port", 0, 9999, WifiPort, 0, "", 4);
-        debug("CONFIG : WifiPort : " + String(WifiPort));
-        EepromWriteInt(WifiPort, EEWifiPort);
-}
-#endif
-
-
-#ifndef BLE_ONLY
-void configAPSSID() {
-        APSSID = EepromReadString(EEAPSSID, 30);
-        APSSID = TFTConfigString("AP SSID", APSSID);
-        debug("CONFIG : APSSID : \"" + APSSID + "\"");
-        EepromWriteString(APSSID, EEAPSSID, 30);
-}
-#endif
-
-
-#ifndef BLE_ONLY
-void configAPPW() {
-        APPW = EepromReadString(EEAPPW, 30);
-        APPW = TFTConfigString("AP Password", APPW);
-        debug("CONFIG : APPassword : \"" + APPW + "\"");
-        EepromWriteString(APPW, EEAPPW, 30);
-}
-#endif
-
-
-#ifndef BLE_ONLY
-void configAPHost() {
-        APHost = EepromReadIP(EEAPHost);
-        APHost = TFTConfigIP("AP Host IP", APHost);
-        debug("CONFIG : APHost : " + String(APHost[0]) + "." + String(APHost[1]) + "." + String(APHost[2]) + "." + String(APHost[3]));
-        EepromWriteIP(APHost, EEAPHost);
-}
-#endif
-
-
-#ifndef BLE_ONLY
-void configAPPort() {
-        APPort = EepromReadInt(EEAPPort);
-        APPort = TFTConfigValue("AP Port", 0, 9999, APPort, 0, "", 4);
-        debug("CONFIG : APPort : " + String(APPort));
-        EepromWriteInt(APPort, EEAPPort);
-}
-#endif
 
 
 void configBluetoothAddress() {
-        for (int i = 0; i < 6; i++) {
-                BluetoothHost[i] = EEPROM.read(EEBluetoothHost + i);
-        }
+
+        // for (int i = 0; i < 6; i++) {
+        //         BluetoothHost[i] = EEPROM.read(EEBluetoothHost + i);
+        // }
+
         byte activeByte = 0;
 
         char strAddress[20];
@@ -312,8 +145,9 @@ void configBluetoothAddress() {
                         activeByte++;
 
                         if (activeByte >= 6) {
-                                for (int i = 0; i < 6; i++) { EEPROM.write(EEBluetoothHost + i, BluetoothHost[i]); }
-                                EEPROM.commit();
+                                copyArray(BluetoothHost, configDoc[EEBluetoothHost]);
+                                // for (int i = 0; i < 6; i++) { EEPROM.write(EEBluetoothHost + i, BluetoothHost[i]); }
+                                // EEPROM.commit();
                                 sprintf(strAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BluetoothHost[0],BluetoothHost[1],BluetoothHost[2],BluetoothHost[3],BluetoothHost[4],BluetoothHost[5]);
                                 debug("Bluetooth Host: " + String(strAddress));
                                 return;
@@ -397,12 +231,11 @@ class MyConfigAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 };
 
 
-int BLEScanTime = 10; //In seconds
 BLEScan* pBLEScan;
-
 
 void configBLE() {
 
+        const uint16_t BLEScanTime = 10; //In seconds
         byte activeMenu = 1;
         BLEDeviceNum = -1;
         char strAddress[20];
@@ -452,9 +285,9 @@ void configBLE() {
                                 return;
                         }
                         else {
-                                for (int i = 0; i < 6; i++) { EEPROM.write(EEBluetoothHost + i, BLEAddressList[activeMenu-1][i]); }
-                                EEPROM.commit();
-                                sprintf(strAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BLEAddressList[activeMenu-1][0],BLEAddressList[activeMenu-1][1],BLEAddressList[activeMenu-1][2],BLEAddressList[activeMenu-1][3],BLEAddressList[activeMenu-1][4],BLEAddressList[activeMenu-1][5]);
+                                memcpy(BluetoothHost, BLEAddressList[activeMenu-1], sizeof(BluetoothHost));
+                                copyArray(BluetoothHost, configDoc[EEBluetoothHost]);
+                                sprintf(strAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BluetoothHost[0],BluetoothHost[1],BluetoothHost[2],BluetoothHost[3],BluetoothHost[4],BluetoothHost[5]);
                                 debug("Bluetooth Name: " + BLEDeviceList[activeMenu-1] + "  Bluetooth Host: " + String(strAddress));
                                 return;
                         }
@@ -494,28 +327,32 @@ void configJogging() {
 }
 
 void configJoggingX() {
-        JogSpeed[0] = EepromReadInt(EEJogSpeed);
+        // JogSpeed[0] = EepromReadInt(EEJogSpeed);
         JogSpeed[0] = (int)TFTConfigValue("Jogging X", 0, 10000, JogSpeed[0], 2, " mm/min", 0);
         debug("CONFIG : JogSpeedX : " + String(JogSpeed[0]));
-        EepromWriteInt(JogSpeed[0], EEJogSpeed);
+        configDoc[EEJogSpeed][0] = JogSpeed[0];
+        // EepromWriteInt(JogSpeed[0], EEJogSpeed);
 }
 void configJoggingY() {
-        JogSpeed[1] = EepromReadInt(EEJogSpeed+2);
+        // JogSpeed[1] = EepromReadInt(EEJogSpeed+2);
         JogSpeed[1] = (int)TFTConfigValue("Jogging Y", 0, 10000, JogSpeed[1], 2, " mm/min", 0);
         debug("CONFIG : JogSpeedY : " + String(JogSpeed[1]));
-        EepromWriteInt(JogSpeed[1], EEJogSpeed+2);
+        configDoc[EEJogSpeed][1] = JogSpeed[1];
+        // EepromWriteInt(JogSpeed[1], EEJogSpeed+2);
 }
 void configJoggingZ() {
-        JogSpeed[2] = EepromReadInt(EEJogSpeed+4);
+        // JogSpeed[2] = EepromReadInt(EEJogSpeed+4);
         JogSpeed[2] = (int)TFTConfigValue("Jogging Z", 0, 10000, JogSpeed[2], 2, " mm/min", 0);
         debug("CONFIG : JogSpeedZ : " + String(JogSpeed[2]));
-        EepromWriteInt(JogSpeed[2], EEJogSpeed+4);
+        configDoc[EEJogSpeed][2] = JogSpeed[2];
+        // EepromWriteInt(JogSpeed[2], EEJogSpeed+4);
 }
 void configJoggingA() {
-        JogSpeed[3] = EepromReadInt(EEJogSpeed+6);
+        // JogSpeed[3] = EepromReadInt(EEJogSpeed+6);
         JogSpeed[3] = (int)TFTConfigValue("Jogging A", 0, 32000, JogSpeed[3], 2, " mm/min", 0);
         debug("CONFIG : JogSpeedA : " + String(JogSpeed[3]));
-        EepromWriteInt(JogSpeed[3], EEJogSpeed+6);
+        configDoc[EEJogSpeed][3] = JogSpeed[3];
+        // EepromWriteInt(JogSpeed[3], EEJogSpeed+6);
 }
 
 
@@ -542,7 +379,7 @@ void configWorkspace() {
                 case 6: WorkSpace = 59; break;
                 case 7: return;
                 }
-                sendCmd("gcode", "G" + String(WorkSpace), "G" + String(WorkSpace));
+                bluetoothSend("gcode", "G" + String(WorkSpace), "G" + String(WorkSpace));
                 return;
         }
 }
@@ -573,64 +410,67 @@ void configProbe() {
 
 
 void configProbeOffset() {
-        ProbeOffset = EepromReadFloat(EEProbeOffset);
+        // ProbeOffset = EepromReadFloat(EEProbeOffset);
         // float ProbeOffsetFloat = ProbeOffset / 100.0;
         ProbeOffset = TFTConfigValue("Probe Offset", 0, 50, ProbeOffset, -2, " mm", 0);
         // ProbeOffset = (int)(ProbeOffsetFloat * 100);
         debug("CONFIG : ProbeOffset : " + String(ProbeOffset));
-        EepromWriteFloat(ProbeOffset, EEProbeOffset);
+        configDoc[EEProbeOffset] = ProbeOffset;
+        // EepromWriteFloat(ProbeOffset, EEProbeOffset);
 }
 
 
 void configProbeDepth() {
-        ProbeDepth = EepromReadInt(EEProbeDepth);
+        // ProbeDepth = EepromReadInt(EEProbeDepth);
         if (ProbeDepth > 32767) { ProbeDepth = ProbeDepth - 65536; }  // 65535
         ProbeDepth = (int)TFTConfigValue("Probe Depth", -100, 100, ProbeDepth, 0, " mm", 0);
         debug("CONFIG : ProbeDepth : " + String(ProbeDepth));
-        EepromWriteInt(ProbeDepth, EEProbeDepth);
+        configDoc[EEProbeDepth] = ProbeDepth;
+        // EepromWriteInt(ProbeDepth, EEProbeDepth);
 }
 
 
 void configProbeSpeed() {
-        ProbeSpeed = EepromReadInt(EEProbeSpeed);
+        // ProbeSpeed = EepromReadInt(EEProbeSpeed);
         ProbeSpeed = (int)TFTConfigValue("Probe Speed", 0, 1000, ProbeSpeed, 0, " mm / min", 0);
         debug("CONFIG : ProbeSpeed : " + String(ProbeSpeed));
-        EepromWriteInt(ProbeSpeed, EEProbeSpeed);
+        configDoc[EEProbeSpeed] = ProbeSpeed;
+        // EepromWriteInt(ProbeSpeed, EEProbeSpeed);
 }
 
 
 void configProbeBackHeight() {
-        ProbeBackHeight = EEPROM.read(EEProbeBackHeight);
+        // ProbeBackHeight = EEPROM.read(EEProbeBackHeight);
         ProbeBackHeight = (byte)TFTConfigValue("Probe Rise", 0, 100, ProbeBackHeight, 0, " mm", 0);
         debug("CONFIG : ProbeBackHeight : " + String(ProbeBackHeight));
-        EEPROM.write(EEProbeBackHeight, ProbeBackHeight);
-        EEPROM.commit();
+        configDoc[EEProbeBackHeight] = ProbeBackHeight;
+        // EEPROM.write(EEProbeBackHeight, ProbeBackHeight);
+        // EEPROM.commit();
 }
 
 void configProbeTime() {
-        ProbeTime = EEPROM.read(EEProbeTime);
+        // ProbeTime = EEPROM.read(EEProbeTime);
         ProbeTime = (byte)TFTConfigValue("Probe Time", 1, 20, ProbeTime, 0, " sec", 0);
         debug("CONFIG : ProbeTime : " + String(ProbeTime));
-        EEPROM.write(EEProbeTime, ProbeTime);
-        EEPROM.commit();
+        configDoc[EEProbeTime] = ProbeTime;
+        // EEPROM.write(EEProbeTime, ProbeTime);
+        // EEPROM.commit();
 }
 
 void configSleep() {
-        SleepTime = EEPROM.read(EESleepTime);
+        // SleepTime = EEPROM.read(EESleepTime);
         SleepTime = (byte)TFTConfigValue("Sleep Time", 0, 20, SleepTime, 0, " min", 0);
         debug("CONFIG : SleepTime : " + String(SleepTime));
-        EEPROM.write(EESleepTime, SleepTime);
-        EEPROM.commit();
+        configDoc[EESleepTime] = SleepTime;
         SleepTicker.interval(SleepTime * 60000);
         if (SleepTime == 0) { SleepTicker.stop(); }
 }
 
 void configBrightness() {
-        TFT_BRIGHTNESS = EEPROM.read(EEBrightness);
+        // TFT_BRIGHTNESS = EEPROM.read(EEBrightness);
         TFT_BRIGHTNESS = (byte)TFTConfigValue("Brightness", 0, 255, TFT_BRIGHTNESS, 0, "", 0);
         debug("CONFIG : TftBrightness : " + String(TFT_BRIGHTNESS));
-        EEPROM.write(EEBrightness, TFT_BRIGHTNESS);
-        EEPROM.commit();
+        configDoc[EEBrightness] = TFT_BRIGHTNESS;
         analogWrite(TFT_LED, TFT_BRIGHTNESS);
 }
 

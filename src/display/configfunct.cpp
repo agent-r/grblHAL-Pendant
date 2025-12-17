@@ -1,6 +1,14 @@
 
 /////////////////////// GENERAL CONFIG FUNCTIONS /////////////////////////////
 
+#include <Arduino.h>
+#include "configfunct.h"
+#include "configmenu.h"
+#include "display/display.h"
+#include "controls/controls.h"
+#include "global.h"
+
+
 void TFTConfigPrepare() {
         tft.fillRect(0,0,240,320,TFT_COLOR_BGR);
         tft.drawRect(ConfigForms[0][0]-1,ConfigForms[0][1]-1,ConfigForms[0][2]+2,ConfigForms[0][3]+2,TFT_COLOR_FRM_LIN);
@@ -164,6 +172,7 @@ String TFTConfigStringChar(int Position) {
         else if (Position == 129) { return("BACK"); }
         else if (Position == 130) { return("SAVE"); }
 }
+
 int TFTConfigStringCharPosX(int Position) {
         if (Position < 33) { Position = 130; }
         if (Position > 130) { Position = 33; }
@@ -173,6 +182,7 @@ int TFTConfigStringCharPosX(int Position) {
         else if (Position == 129) { return(25+(COLWIDTH*4)); }
         else if (Position == 130) { return(25+(COLWIDTH*8)); }
 }
+
 int TFTConfigStringCharPosY(int Position) {
         if (Position < 33) { Position = 130; }
         if (Position > 130) { Position = 33; }
@@ -182,72 +192,6 @@ int TFTConfigStringCharPosY(int Position) {
         else if (Position == 129) { return(67 + (ROWHEIGHT*9)); }
         else if (Position == 130) { return(67 + (ROWHEIGHT*9)); }
 }
-
-#ifndef BLE_ONLY
-IPAddress TFTConfigIP (const String Title, IPAddress newIP) {
-        byte activeByte = 0;
-        String strIP;
-        TFTConfigPrepare();
-        TFTConfigPrint(0, Title, TFT_COLOR_CNF_STD);
-        TFTSetFontSize(2);
-        tft.setCursor(ConfigFields[2][0]+7, ConfigFields[2][1]+4);
-
-        for (int i = 0; i < activeByte; i++) {
-                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                tft.print(newIP[i]); tft.print(".");
-        }
-        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-        tft.print(newIP[activeByte]);
-        for (int i = (activeByte + 1); i < 4; i++) {
-                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                tft.print("."); tft.print(newIP[i]);
-        }
-
-        while (true) {
-                delay(20);
-                if (checkEnter()) {
-                        activeByte++;
-
-                        if (activeByte >= 4) { return(newIP); }
-                        tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
-                        tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
-
-                        for (int i = 0; i < activeByte; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(newIP[i]); tft.print(".");
-                        }
-                        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                        tft.print(newIP[activeByte]);
-                        for (int i = (activeByte + 1); i < 4; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print("."); tft.print(newIP[i]);
-                        }
-                }
-
-                int count = readEncoder(); // rotaryEncoder.readEncoder();
-                if (count != 0) {
-                        newIP[activeByte] = newIP[activeByte] + count;
-                        resetEncoder();   // rotaryEncoder.reset();
-                        tft.fillRect(ConfigFields[2][0], ConfigFields[2][1], ConfigFields[2][2], ConfigFields[2][3], TFT_COLOR_FRM_BGR);
-                        tft.setCursor(ConfigFields[2][0] + 7, ConfigFields[2][1] + 4);
-
-                        for (int i = 0; i < activeByte; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print(newIP[i]); tft.print(".");
-                        }
-
-                        tft.setTextColor(TFT_COLOR_CNF_HIL, TFT_COLOR_FRM_BGR);
-                        tft.print(newIP[activeByte]);
-
-                        for (int i = (activeByte + 1); i < 4; i++) {
-                                tft.setTextColor(TFT_COLOR_CNF_STD, TFT_COLOR_FRM_BGR);
-                                tft.print("."); tft.print(newIP[i]);
-                        }
-                }
-        }
-}
-#endif
-
 
 void TFTConfigInfo(const String* Content, const int Length) {
         TFTConfigPrepare();

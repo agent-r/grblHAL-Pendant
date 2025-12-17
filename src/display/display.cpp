@@ -3,6 +3,17 @@
 ///////////////////////       DISPLAY       ///////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
+#include <Arduino.h>
+#include <TickTwo.h>                // TICKER
+#include <TFT_eSPI.h>               // TFT
+#include <SPI.h>                    // TFT
+#include "driver/adc.h"             // FOR SLEEP !
+
+#include "display.h"
+#include "global.h"
+#include "communication/bluetooth.h"
+#include "communication/debug.h"
+
 
 
 const int Fields[7][5] = {
@@ -16,6 +27,44 @@ const int Fields[7][5] = {
 };
 const int Line[4] = {0,234,240};
 
+uint64_t SleepPinMask = 0;
+
+// --------------------------------------
+// TFT TICKER
+TFT_eSPI tft = TFT_eSPI();
+void TFTUpdate();
+TickTwo TftTicker(TFTUpdate, (1000 / TFT_FPS));
+
+
+void TFTBlink();
+TickTwo BlinkTicker(TFTBlink, (1000 / BLINK_FPS));
+bool blinker = true;
+bool blinker_change = true;
+
+
+void TFTMessage();
+TickTwo MessageTicker(TFTMessage, (1000 * TFT_MESSAGE_TIME));
+
+
+// SLEEP
+void TFTSleep();
+TickTwo SleepTicker(TFTSleep, (60000 * SleepTime)); // 60000
+
+
+
+
+// --------------------------------------
+// TFT INIT
+void TFTInit() {
+
+        // START TFT (after Connection setup. sometimes stays black otherwise)
+        tft.begin();
+        tft.setRotation(TFT_ROTATION);
+        pinMode(TFT_LED, OUTPUT);
+        analogWrite(TFT_LED, TFT_BRIGHTNESS); 
+        TFTPrepare();
+
+}
 
 void TFTUpdate() {
 
@@ -84,18 +133,9 @@ void TFTSleep() {
         analogWrite(TFT_LED, 0);
         tft.fillRect(0,0,240,320, ILI9341_WHITE);
 
-        // Stop WIFI
-        // TCPClient.stop();
-        // WiFi.disconnect(true);
-        // WiFi.mode(WIFI_OFF);
-        // esp_wifi_stop();
 
-        // Stop BLE
-        // pClient->disconnect();
-
-        // Disconnect all !
         
-        Disconnect(true, true);
+        bluetoothDisconnect();
 
         adc_power_off();
 
@@ -130,8 +170,8 @@ void TFTSleep() {
         wxchange = true; wychange = true; wzchange = true, wachange = true; statechange = true;
         EncoderValue = 0;
 
-        ConnectionSetup();
-        Connect();
+        bluetoothInit();
+        bluetoothConnect();
 
         analogWrite(TFT_LED, TFT_BRIGHTNESS);
         TFTPrepare();
