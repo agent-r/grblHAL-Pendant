@@ -13,6 +13,7 @@
 #include "global.h"
 #include "communication/bluetooth.h"
 #include "communication/debug.h"
+#include "controls/controls.h"
 
 
 
@@ -35,21 +36,17 @@ TFT_eSPI tft = TFT_eSPI();
 void TFTUpdate();
 TickTwo TftTicker(TFTUpdate, (1000 / TFT_FPS));
 
-
 void TFTBlink();
 TickTwo BlinkTicker(TFTBlink, (1000 / BLINK_FPS));
 bool blinker = true;
 bool blinker_change = true;
 
-
 void TFTMessage();
 TickTwo MessageTicker(TFTMessage, (1000 * TFT_MESSAGE_TIME));
-
 
 // SLEEP
 void TFTSleep();
 TickTwo SleepTicker(TFTSleep, (60000 * SleepTime)); // 60000
-
 
 
 
@@ -121,23 +118,22 @@ void TFTUpdate() {
 
 
 void TFTSleep() {
+
         SleepTicker.stop();
-        // Needed?
-        // StateTicker.stop();
-        // TftTicker.stop();
-        //etc.
+        KeypadTicker.stop();
+        EncoderTicker.stop();
+        BlinkTicker.stop();
+        MessageTicker.stop();
+        TftTicker.stop();
 
         debug("[PENDANT] sleep");
         
         // Turn off TFT
         analogWrite(TFT_LED, 0);
         tft.fillRect(0,0,240,320, ILI9341_WHITE);
-
-
-        
         bluetoothDisconnect();
 
-        adc_power_off();
+        // adc_power_off();
 
         // wait a moment for connections to close...
         delay(200);
@@ -160,14 +156,13 @@ void TFTSleep() {
         esp_sleep_enable_ext1_wakeup(SleepPinMask, ESP_EXT1_WAKEUP_ANY_HIGH);
         // GoTo Sleep
         esp_light_sleep_start();
-        // esp_deep_sleep_start();  // DOES REBOOT... Why? Normal=
 
         // WakeUp Routine:
         delay(200);
 
-        adc_power_on();
+        // adc_power_on();
 
-        wxchange = true; wychange = true; wzchange = true, wachange = true; statechange = true;
+        wxchange = true; wychange = true; wzchange = true; wachange = true; statechange = true;
         encoderValue = 0;
 
         bluetoothInit();
@@ -177,10 +172,15 @@ void TFTSleep() {
         TFTPrepare();
 
         if (SleepTime > 0) {SleepTicker.start();}
-        // StateTicker.start();
+
+        KeypadTicker.start();
+        EncoderTicker.start();
+        // BlinkTicker.start();
+        // MessageTicker.start();
         // TftTicker.start();
 
         debug("[PENDANT] wake up");
+
 }
 
 

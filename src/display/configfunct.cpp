@@ -27,7 +27,7 @@ void TFTConfigPrint(const byte Aim, String Content, const int Color) {
         tft.print(Content);
 }
 
-
+ 
 byte TFTConfigMenu(const String* Content, const int Length) {
 
         byte activeMenu = 1;

@@ -20,7 +20,7 @@ String stateold = "";
 bool statechange = true;
 
 // ----- FACTOR -----
-byte activeFactor = 2;
+uint8_t activeFactor = 2;
 const float factor[5] = {0.01, 0.1, 1, 10, 100};
 const String strFactor[5] = {"0.01", "0.10", "1.00", "10.0", "100 "};
 bool factorchange = true;
@@ -46,4 +46,4 @@ uint16_t BluetoothPin;
 bool BLEconnected = false;
 
 // ----- ENCODER -----
-volatile int16_t encoderValue = 0;
+volatile int32_t encoderValue = 0;

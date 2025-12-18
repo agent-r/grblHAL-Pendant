@@ -15,15 +15,13 @@
 #define SERIAL_DEBUG_OUT      // Bluetooth Outputs
 // #define MESSAGE_DEBUG         // DEBUG via BLE / Wifi Message
 
-
 //BLE
 #define BLE_MAX_PACKET 254   // maximal erwartete Paketgröße
-
 
 // ROTARY ENCODER
 #define ENCODER_PIN_A 36
 #define ENCODER_PIN_B 39
-#define ENCODER_TICKER_TIME 200              // Update Rate for Sending Code // was 5
+#define ENCODER_TICKER_TIME 150              // Update Rate for Sending Code // was 50
 
 // EEPROM
 #define EEPROM_LENGTH 512
@@ -51,7 +49,7 @@
 #define BUTTON_9_PIN 4          // STOP      
 #define BUTTON_10_PIN 2         // RESET
 #define BUTTON_11_PIN 15        // ENTER
-#define BUTTON_TICKER_TIME 50               // Debounce for Buttons // was 80
+#define BUTTON_TICKER_TIME 40               // Debounce for Buttons // was 80
 #define BUTTON_DEBOUNCE 10               // Debounce for Buttons // was 80
 
 // TFT
@@ -150,4 +148,4 @@ extern QueueHandle_t bleQueue;
 
 
 // ----- ENCODER -----
-extern volatile int16_t encoderValue;
+extern volatile int32_t encoderValue;

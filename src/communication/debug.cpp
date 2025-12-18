@@ -17,10 +17,3 @@ void debug(const String& msg) {
         */
 }
 
-
-void sendHeap() {
-        #ifdef SERIAL_DEBUG
-                Serial.print("Stack Watermarks :   "); Serial.println(uxTaskGetStackHighWaterMark(NULL));
-                Serial.print("Free Heap        :   "); Serial.println(ESP.getFreeHeap());
-        #endif
-}

@@ -4,7 +4,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <Arduino.h>
-#include <NewEncoder.h>             // ROTARY ENCODER
+#include <ESP32Encoder.h>
 #include <JC_Button.h>              // BUTTON CHECKER
 #include <TickTwo.h>                // TICKER
 #include <ArduinoJson.h>
@@ -15,10 +15,6 @@
 #include "display/display.h"
 #include "display/configmenu.h"
 #include "communication/debug.h"
-
-#define ENCODER_MIN -1000
-#define ENCODER_MAX 1000
-
 
 Button Button0(BUTTON_0_PIN, BUTTON_DEBOUNCE);
 Button Button1(BUTTON_1_PIN, BUTTON_DEBOUNCE);
@@ -33,74 +29,30 @@ Button Button9(BUTTON_9_PIN, BUTTON_DEBOUNCE);
 Button Button10(BUTTON_10_PIN, BUTTON_DEBOUNCE);
 Button Button11(BUTTON_11_PIN, BUTTON_DEBOUNCE);
 
-
-struct EncoderEvent { int16_t delta; };
 struct KeypadEvent { uint8_t button; };
 struct BleEvent { uint8_t data[BLE_MAX_PACKET]; size_t len; };
 
-QueueHandle_t encoderQueue;
 QueueHandle_t keypadQueue;
 QueueHandle_t bleQueue = nullptr; // ist bereits global definiert
-
-static NewEncoder* encoder1 = nullptr;
-
-static void ESP_ISR encoderCallback( NewEncoder* enc, const volatile NewEncoder::EncoderState* state, void* uPtr ) {
-        // statischer letzter Wert – bleibt zwischen ISR-Aufrufen erhalten
-        static int16_t lastValue = 0;
-        BaseType_t woken = pdFALSE;
-
-        if (state != nullptr) {           // <--- sicherstellen, dass state gültig ist
-                int16_t current = state->currentValue;
-                int16_t delta = current - lastValue;
-                lastValue = current;
-            
-                if (encoderQueue != nullptr && delta != 0) {
-                    EncoderEvent evt{.delta = delta};
-                    xQueueSendFromISR(encoderQueue, &evt, &woken);
-                }
-        }        
-    
-        if (woken) {
-            portYIELD_FROM_ISR();
-        }
-}
-
-    
-static void handleEncoder(void*) {
-        
-        encoder1 = new NewEncoder(ENCODER_PIN_A, ENCODER_PIN_B, ENCODER_MIN, ENCODER_MAX, 0, HALF_PULSE);
-
-        if (!encoder1->begin()) {
-                delete encoder1;
-                encoder1 = nullptr;
-                vTaskDelete(nullptr);
-            }
-    
-        encoder1->attachCallback(encoderCallback);
-        vTaskDelete(nullptr); // Task endet hier!
-    }
-
 
 // #define KEYPAD_PIN GPIO_NUM_33       // ONLY ADC1-PINS !!!
 void checkKeypad();
 TickTwo KeypadTicker(checkKeypad, BUTTON_TICKER_TIME);
+void handleKeypadEvent(uint8_t pressedButton);
+
+ESP32Encoder encoder;
+void sendEncoder();
+TickTwo EncoderTicker(sendEncoder, ENCODER_TICKER_TIME);
+
 
 /////////////////// CONTROLS TASK AND INIT /////////////////////////
 
 void controlTask(void* pvParameters) {
 
-        EncoderEvent encEvt;
         KeypadEvent keyEvt;
         BleEvent bleEvt;
     
         for (;;) {
-            // Encoder Events verarbeiten
-            while (xQueueReceive(encoderQueue, &encEvt, 0) == pdTRUE) {
-                encoderValue += encEvt.delta; // delta addieren
-                // hier Bluetooth/GCode generieren, TFT-Update etc.
-                handleEncoderEvent(encEvt.delta);
-
-            }
     
             // Keypad Events verarbeiten
             while (xQueueReceive(keypadQueue, &keyEvt, 0) == pdTRUE) {
@@ -112,6 +64,8 @@ void controlTask(void* pvParameters) {
                 bluetoothParse(bleEvt.data, bleEvt.len);
             }
     
+            // checkEncoder();
+
             // TFT aktualisieren
             TFTUpdate();
 
@@ -137,57 +91,74 @@ void controlsInit() {
         Button11.begin();              // initialize the button object
 
         // Queues erstellen (WICHTIG: VOR Task-Start)
-        encoderQueue = xQueueCreate(8, sizeof(EncoderEvent));
         keypadQueue  = xQueueCreate(8, sizeof(KeypadEvent));
         bleQueue     = xQueueCreate(8, sizeof(BleEvent));
 
-        configASSERT(encoderQueue);
         configASSERT(keypadQueue);
         configASSERT(bleQueue);
 
-        // Encoder-Setup-Task (lebt nur kurz)
-        xTaskCreatePinnedToCore( handleEncoder, "EncoderInit", 2048, nullptr, 3, nullptr, 1 );
         // ZENTRALER CONTROLLER TASK
         xTaskCreatePinnedToCore( controlTask, "Controller", 4096, nullptr, 2, nullptr, 1 );
+
+        ESP32Encoder::useInternalWeakPullResistors = puType::up;
+        encoder.attachSingleEdge (ENCODER_PIN_A, ENCODER_PIN_B);
+        encoder.setCount(0);
+
 }
 
 
 /////////////////////////////    ENCODER    ////////////////////////////////////
 
+void checkEncoder() {
+
+        static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+        portENTER_CRITICAL(&mux);
+                encoderValue = encoder.getCount();
+        portEXIT_CRITICAL(&mux);
+
+}
 
 
-void handleEncoderEvent(int16_t encoderDelta) {
+void sendEncoder() {
 
-        if (encoderDelta == 0) { return; }              // nichts zu tun
+        int16_t sendValue = encoderValue;
+        encoder.setCount(0);
+        
+        if (sendValue == 0) { return; }              // nichts zu tun
 
         char gcode[64];
-        char msg[16];
-        
-        float distance = factor[activeFactor] * encoderDelta * AxisDir[activeAxis];
+        char msg[20];
+        float distance = factor[activeFactor] * sendValue * AxisDir[activeAxis];
 
-        int gcodelength = snprintf(gcode, sizeof(gcode), "$J=G91%s%.3fF%s", AxisName[activeAxis], distance, JogSpeed[activeAxis]);
+
+        int gcodelength = snprintf(gcode, sizeof(gcode), "$J=G91%s%.3fF%d", AxisName[activeAxis], distance, JogSpeed[activeAxis]);
         int msglength = snprintf(msg, sizeof(msg), "JOG %s%.3f", AxisName[activeAxis], distance);
-
 
         // Falls das Buffer zu klein war → n >= sizeof(gcode)
         if (gcodelength < 0 || (size_t)gcodelength >= sizeof(gcode)) { debug("[PENDANT] GCode Buffer overflow"); return; }
         if (msglength < 0 || (size_t)msglength >= sizeof(msg)) { debug("[PENDANT] Msg Buffer overflow"); return; }
     
-        // bluetoothSend("gcode", String(gcode), String(msg));
-        debug (String(encoderDelta));
+        #ifdef SERIAL_DEBUG 
+                Serial.printf("[PENDANT] ENCODER: %d\n", sendValue);
+        #endif
+
+        bluetoothSend("gcode", String(gcode), String(msg));
 
         if (SleepTime > 0) { SleepTicker.start(); }
 
 }
 
-
 void resetEncoder() {
-        encoderValue = 0;
+        static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+        portENTER_CRITICAL(&mux);
+                encoder.clearCount();
+        portEXIT_CRITICAL(&mux);
 }
 
 int16_t readEncoder() {
-        return(encoderValue);
-
+        int16_t Value = encoderValue;
+        resetEncoder(); 
+        return(Value);
 }
 
 
@@ -224,26 +195,27 @@ uint8_t readKeypad() {
 void handleKeypadEvent(uint8_t pressedButton) {
 
         #ifdef SERIAL_DEBUG
-                if (pressedButton != 12) { Serial.println("KEYPAD PRESS: " + String(pressedButton)) ;}
+                if (pressedButton != 12) { Serial.printf("[PENDANT] BUTTON PRESSED: %d\n", pressedButton) ;}
         #endif
 
-        /*
+        if (SleepTime > 0) { SleepTicker.start(); }
+
         switch (pressedButton) {
-        // case 12: break;                  // no button pressed !
-        case 0: SleepTicker.start(); decreaseAxis(); break;                      // setX()
-        case 1: SleepTicker.start(); increaseAxis(); break;                      // setY
-        case 2: SleepTicker.start(); setZero(); break;                      // setZ
-        case 3: SleepTicker.start(); gotoZero(); break;                  // gotoZero()
-        case 4: SleepTicker.start(); probeZ(); break;                    // probeZ()
-        case 5: SleepTicker.start(); config(); break;                    // config()
-        case 6: SleepTicker.start(); decreaseFactor(); break;            // decreaseFactor()
-        case 7: SleepTicker.start(); increaseFactor(); break;            // increaseFactor()
-        case 8: SleepTicker.start(); homeAll(); break;                   // homeAll()
-        case 9: SleepTicker.start(); stop(); break;                       // run()
-        case 10: SleepTicker.start(); unlock(); break;                     // stop()
-        case 11: SleepTicker.start(); enter(); break;                   // unlock()
+        case 12: break;                  // no button pressed !
+        case 0: decreaseAxis(); break;                      // setX()
+        case 1: increaseAxis(); break;                      // setY
+        case 2: setZero(); break;                      // setZ
+        case 3: gotoZero(); break;                  // gotoZero()
+        case 4: probeZ(); break;                    // probeZ()
+        case 5: config(); break;                    // config()
+        case 6: decreaseFactor(); break;            // decreaseFactor()
+        case 7: increaseFactor(); break;            // increaseFactor()
+        case 8: homeAll(); break;                   // homeAll()
+        case 9: stop(); break;                       // run()
+        case 10: unlock(); break;                     // stop()
+        case 11: enter(); break;                   // unlock()
         }
-        */
+
 }
 
 

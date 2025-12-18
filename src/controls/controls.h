@@ -8,13 +8,13 @@ void controlsInit();
 void checkEncoder();
 int16_t readEncoder();
 void resetEncoder();
+void sendEncoder();
+
 void checkKeypad();
 uint8_t readKeypad();
 bool checkEnter();
 bool checkEnterConfirm();
 bool checkConfig();
-void handleKeypadEvent(uint8_t pressedButton);
-void handleEncoderEvent(int16_t encoderDelta);
 
 void decreaseAxis();
 void decreaseAxis();
@@ -29,12 +29,12 @@ void stop();
 void unlock();
 void enter();
 
-
 float readBattery();
 int percentageBattery(const float Voltage);
 
 // extern TickTwo EncoderTicker;
 extern TickTwo KeypadTicker;
+extern TickTwo EncoderTicker;
 
 extern Button Button0;
 extern Button Button1;

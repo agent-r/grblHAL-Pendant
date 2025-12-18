@@ -134,24 +134,44 @@ void bluetoothParse(const uint8_t* data, size_t len) {
             return;
         }
     
+        stateold = state;
+        state = JsonIn["state"].as<String>();
+        if (stateold != state) { statechange = true; }
+
+        wxold = wx;
+        wx = JsonIn["wx"].as<float>();
+        if (wxold != wx) { wxchange = true; }
+
+        wyold = wy;
+        wy = JsonIn["wy"].as<float>();
+        if (wyold != wy) { wychange = true; }
+
+        wzold = wz;
+        wz = JsonIn["wz"].as<float>();
+        if (wzold != wz) { wzchange = true; }
+
+        waold = wa;
+        wa = JsonIn["wa"].as<float>();
+        if (waold != wa) { wachange = true; }
+
+        /*
         const char* state = JsonIn["state"];
         float wx = JsonIn["wx"];
         float wy = JsonIn["wy"];
         float wz = JsonIn["wz"];
         float wa = JsonIn["wa"];
+        */
     
-        Serial.printf("[BLUETOOTH PARSE] state=%s, wx=%.3f, wy=%.3f, wz=%.3f, wa=%.3f\n", state, wx, wy, wz, wa);
+        Serial.printf("[PENDANT] PARSED: state=%s, wx=%.3f, wy=%.3f, wz=%.3f, wa=%.3f\n", state, wx, wy, wz, wa);
 
 }
 
 void bluetoothSend(const String& type, const String& cmd, const String& cmd_info) {
 
-        /*
         JsonDocument JsonOut;
         JsonOut[type] = cmd;                     // {"type":"cmd"}
         char jsonBuf[128];                      // was 64
         size_t jsonLen = serializeJson(JsonOut, jsonBuf, sizeof(jsonBuf));
-
 
         if (bluetoothConnect())
         {
@@ -167,6 +187,6 @@ void bluetoothSend(const String& type, const String& cmd, const String& cmd_info
         else {
                 TFTPrint(MessageField, "NO CONNECTION. HOLD!", TFT_COLOR_MSG_ERR);
         }
-        */
+
 }
 

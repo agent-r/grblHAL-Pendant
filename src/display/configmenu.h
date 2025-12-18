@@ -20,7 +20,7 @@ void configBluetoothAddress();
 
 // uint16_t BLEScanTime;
 extern BLEScan* pBLEScan;
-
+ 
 void configBLE();
 
 // void configBluetoothPin();

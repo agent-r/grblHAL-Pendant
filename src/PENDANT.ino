@@ -4,6 +4,31 @@
 //
 /////////////////////////////////////////
 
+
+/////////////////////////////////////////
+//
+//   BUGS:
+//
+//      - im Config-Menü werden Encoder-Ticks gesendet
+//      - Sleep funktioniert nicht richtig
+//      - 
+//      - 
+//
+//   TODO:
+//
+//
+//
+//
+//
+/////////////////////////////////////////
+
+
+
+
+
+
+
+
 // PINS
 ////////////////////////////////////////
 // 36   ROT CLK : A
@@ -82,7 +107,7 @@ void setup() {
         // TftTicker.start();
         if (SleepTime > 0) { SleepTicker.start(); }
         KeypadTicker.start();
-        // EncoderTicker.start();
+        EncoderTicker.start();
         debug("[PENDANT] tickers started");
 
 }
@@ -95,7 +120,9 @@ void setup() {
 void loop() {
 
         // TftTicker.update();
-        // EncoderTicker.update();
+        checkEncoder();
+
+        EncoderTicker.update();
         KeypadTicker.update();
         MessageTicker.update();
         SleepTicker.update();

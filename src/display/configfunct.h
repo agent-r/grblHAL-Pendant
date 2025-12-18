@@ -11,3 +11,4 @@ String TFTConfigStringChar(int Position);
 int TFTConfigStringCharPosX(int Position);
 int TFTConfigStringCharPosY(int Position);
 void TFTConfigInfo(const String* Content, const int Length);
+ 

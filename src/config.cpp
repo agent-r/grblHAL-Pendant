@@ -96,4 +96,14 @@ void configSave() {
         EEPROM.commit();
 
         debug("[PENDANT] EEPROM JSON SAVED");
+
+        if (SleepTime > 0) {
+                SleepTicker.interval(SleepTime * 60000);
+                SleepTicker.start();
+        }
+        else {
+                SleepTicker.interval(10000);
+                SleepTicker.stop();
+        }
+
 }
