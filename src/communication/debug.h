@@ -1,4 +1,5 @@
 #pragma once
 #include <Arduino.h>
 
-void debug(String msg);
+void debug(const String& msg);
+void sendHeap();

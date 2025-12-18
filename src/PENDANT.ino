@@ -58,25 +58,32 @@ void setup() {
 
         // INITIALIZE THINGS
         serialInit();
+        debug("[PENDANT] started");
+
         configInit();
+
         bluetoothInit();
+
         TFTInit();
+        debug("[PENDANT] tft started");
+
         controlsInit();
+        debug("[PENDANT] controls started");
+
         
         // CHECK IF CONFIG IS NEEDED
         if (checkConfig()) { config(); }
 
         // CONNECT
         bluetoothConnect();
-
-        // SAY HELLO
-        debug("[PENDANT] started & connected");
+        debug("[PENDANT] bluetooth connected");
 
         // START TICKERS
-        TftTicker.start();
+        // TftTicker.start();
         if (SleepTime > 0) { SleepTicker.start(); }
         KeypadTicker.start();
-        EncoderTicker.start();
+        // EncoderTicker.start();
+        debug("[PENDANT] tickers started");
 
 }
 
@@ -87,8 +94,8 @@ void setup() {
 
 void loop() {
 
-        TftTicker.update();
-        EncoderTicker.update();
+        // TftTicker.update();
+        // EncoderTicker.update();
         KeypadTicker.update();
         MessageTicker.update();
         SleepTicker.update();

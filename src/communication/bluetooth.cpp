@@ -18,15 +18,25 @@ static BLERemoteCharacteristic* Rx_Characteristic;
 
 BLEClient *pClient = nullptr;
 
+struct BlePacket {
+        uint8_t data[BLE_MAX_PACKET];
+        size_t len;
+    };
+
+// static QueueHandle_t bleQueue;
 
 // Callback When the BLE Bridge sends a new state
-static void Rx_NotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
+void Rx_NotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
 
-//        char* Rx = (char*)pData;
-//        String Rx_str = String(Rx);
+//                if (length > BLE_MAX_PACKET) { length = BLE_MAX_PACKET; }
+//                memcpy(ble_rx_buffer, pData, length);
+//                ble_rx_len = length;
+//                ble_new_data = true;
 
-        String Rx_str((char*)pData, length);
-        bluetoothParse(Rx_str);
+        BlePacket pkt;
+        pkt.len = length > BLE_MAX_PACKET ? BLE_MAX_PACKET : length;
+        memcpy(pkt.data, pData, pkt.len);
+        xQueueSendFromISR(bleQueue, &pkt, NULL);
 
 }
 
@@ -35,13 +45,12 @@ class MyClientCallback : public BLEClientCallbacks {
 
         void onConnect(BLEClient* pclient) {
                 BLEconnected = true;
+                debug("[PENDANT] connected");
         }
 
         void onDisconnect(BLEClient* pclient) {
                 BLEconnected = false;
-                #ifdef SERIAL_DEBUG
-                        Serial.println("[PENDANT] BLE disconnected");
-                #endif
+                debug("[PENDANT] BLE disconnected");
         }
 
 };
@@ -49,10 +58,10 @@ class MyClientCallback : public BLEClientCallbacks {
 
 
 void bluetoothInit() {
-        #ifdef SERIAL_DEBUG
-                Serial.println("[PENDANT] Setting up BLE Connection");
-        #endif
+
+        debug("[PENDANT] Setting up BLE Connection");
         BLEDevice::init("");
+        // bleQueue = xQueueCreate(10, BLE_MAX_PACKET); // max 5 Pakete
 }
 
 
@@ -80,20 +89,19 @@ bool bluetoothConnect() {
                         return(false); 
                 }
 
+                pClient->setMTU(247); // BLE-Buffer vergrößeren.
+
+
                 BLERemoteService* pRemoteService = pClient->getService(SERVICE_UUID);
                 if (pRemoteService == nullptr) {
-                        #ifdef SERIAL_DEBUG
-                                Serial.println("[PENDANT] Failed to find our service UUID: ");
-                                Serial.println("[PENDANT] " + String(SERVICE_UUID.toString().c_str()));
-                        #endif
+                        // debug("[PENDANT] Failed to find our service UUID:" + String(SERVICE_UUID.toString().c_str()));
+                        debug("[PENDANT] Failed to find our service UUID:");
                         return(false);
                 }
         
                 Rx_Characteristic = pRemoteService->getCharacteristic(RX_CHARACTERISTIC_UUID);
                 if (Rx_Characteristic == nullptr) {
-                        #ifdef SERIAL_DEBUG
-                                Serial.println("[PENDANT] Failed to find RX characteristic UUID");
-                        #endif
+                        debug("[PENDANT] Failed to find RX characteristic UUID");
                         return false;
                 }
                 Rx_Characteristic->registerForNotify(Rx_NotifyCallback); //Assign callback functions for the Characteristics
@@ -101,9 +109,7 @@ bool bluetoothConnect() {
                 
                 Tx_Characteristic = pRemoteService->getCharacteristic(TX_CHARACTERISTIC_UUID);
                 if (Tx_Characteristic == nullptr) {
-                        #ifdef SERIAL_DEBUG
-                                Serial.println("[PENDANT] Failed to find TX characteristic UUID");
-                        #endif
+                        debug("[PENDANT] Failed to find TX characteristic UUID");
                         return false;
                 }
 
@@ -119,61 +125,41 @@ void bluetoothDisconnect() {
         }
 }
 
+void bluetoothParse(const uint8_t* data, size_t len) {
 
-void bluetoothParse(String& JsonString) {
-
-        debug("[PENDANT] RECEIVED:    " + JsonString);
-
-        // DynamicJsonDocument JsonIn(128); // deprecated
         JsonDocument JsonIn;
-        DeserializationError error = deserializeJson(JsonIn, JsonString);
+        DeserializationError err = deserializeJson(JsonIn, data, len);
+        if (err) {
+            Serial.println("[PENDANT] BLE Parser - JSON Error");
+            return;
+        }
+    
+        const char* state = JsonIn["state"];
+        float wx = JsonIn["wx"];
+        float wy = JsonIn["wy"];
+        float wz = JsonIn["wz"];
+        float wa = JsonIn["wa"];
+    
+        Serial.printf("[BLUETOOTH PARSE] state=%s, wx=%.3f, wy=%.3f, wz=%.3f, wa=%.3f\n", state, wx, wy, wz, wa);
 
-        if (error) {
-                debug("[PENDANT] WARNING: DESERIALIZATION ERROR:   " + String(error.f_str()));
-        }
-        else {
-                // if (JsonIn.containsKey("wx")) {  is<JsonVariant>()
-                if (JsonIn["wx"].is<JsonVariant>()) {
-                        wx = JsonIn["wx"];
-                        if (wx != wxold) { wxchange = true; wxold = wx; }
-                }
-                if (JsonIn["wy"].is<JsonVariant>()) {
-                        wy = JsonIn["wy"];
-                        if (wy != wyold) { wychange = true; wyold = wy; }
-                }
-                if (JsonIn["wz"].is<JsonVariant>()) {
-                        wz = JsonIn["wz"];
-                        if (wz != wzold) { wzchange = true; wzold = wz; }
-                }
-                if (JsonIn["wa"].is<JsonVariant>()) {
-                        wa = JsonIn["wa"];
-                        if (wa != waold) { wachange = true; waold = wa; }
-                }
-                if (JsonIn["state"].is<JsonVariant>()) {
-                        const char* statechar = JsonIn["state"];
-                        state = String(statechar);
-                        if (state != stateold) { statechange = true; stateold = state; }
-                        if (state == "Alarm") { Probe_Alarm = true; }
-                        if (state == "Run") { SleepTicker.start(); }
-                }
-                
-                #ifdef SERIAL_DEBUG_IN
-                        debug("[PENDANT] RECEIVED & PARSED:   WX: " + String(wx) + "   WY: " + String(wy) + "   WZ: " + String(wz) + "   WA: " + String(wa) + "   STATE: " + state);
-                #endif
-        }
 }
-
 
 void bluetoothSend(const String& type, const String& cmd, const String& cmd_info) {
 
-        String cmd_json = "{\"" + type + "\":\"" + cmd + "\"}";
+        /*
+        JsonDocument JsonOut;
+        JsonOut[type] = cmd;                     // {"type":"cmd"}
+        char jsonBuf[128];                      // was 64
+        size_t jsonLen = serializeJson(JsonOut, jsonBuf, sizeof(jsonBuf));
+
 
         if (bluetoothConnect())
         {
-                Tx_Characteristic->writeValue(cmd_json.c_str(), cmd.length());
+
+                Tx_Characteristic->writeValue(reinterpret_cast<uint8_t*>(jsonBuf), jsonLen);
 
                 #ifdef SERIAL_DEBUG_OUT
-                        Serial.println(cmd_json);
+                        Serial.println("[PENDANT] SENT: " + String(jsonBuf));
                 #endif
 
                 TFTPrint(MessageField, cmd_info, TFT_COLOR_MSG_NRM);
@@ -181,6 +167,6 @@ void bluetoothSend(const String& type, const String& cmd, const String& cmd_info
         else {
                 TFTPrint(MessageField, "NO CONNECTION. HOLD!", TFT_COLOR_MSG_ERR);
         }
+        */
 }
-
 

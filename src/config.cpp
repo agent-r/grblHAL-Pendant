@@ -6,6 +6,7 @@
 #include "config.h"
 #include "global.h"
 #include "display/display.h"
+#include "communication/debug.h"
 
 JsonDocument configDoc;
 
@@ -17,11 +18,10 @@ void configInit() {
 
         DeserializationError jsonError = deserializeJson(configDoc, eepromConfigStream);
                 if (jsonError) {
-                        #ifdef SERIAL_DEBUG 
-                                Serial.print(F("deserializeJson() failed: "));
-                                Serial.println(jsonError.f_str());
-                        #endif
-                // set defaults:
+
+                        debug("deserializeJson() failed:");
+
+                        // set defaults:
                         memset(BluetoothHost, 9, sizeof(BluetoothHost));
                         BluetoothPin = 9999;
                         memset(JogSpeed, 100, sizeof(JogSpeed));
@@ -51,34 +51,28 @@ void configInit() {
                         TFT_BRIGHTNESS = configDoc[EEBrightness];
                 }
 
+                debug("[PENDANT] ------- EEPROM DATA ---------");
 
+                debug("[PENDANT] BLE HOST: " + String(BluetoothHost[0], HEX) + ":" + String(BluetoothHost[1], HEX) + ":" + String(BluetoothHost[2], HEX) + ":" + String(BluetoothHost[3], HEX) + ":" + String(BluetoothHost[4], HEX) + ":" + String(BluetoothHost[5], HEX));
+                debug("[PENDANT] BLE PIN: " + String(BluetoothPin));
 
-        #ifdef SERIAL_DEBUG 
+                debug("[PENDANT] X JOG SPEED: " + String(JogSpeed[0]));
+                debug("[PENDANT] Y JOG SPEED: " + String(JogSpeed[1]));
+                debug("[PENDANT] Z JOG SPEED: " + String(JogSpeed[2]));
+                debug("[PENDANT] A JOG SPEED: " + String(JogSpeed[3]));
 
-                Serial.println("[PENDANT] ------- EEPROM DATA ---------");
+                debug("[PENDANT] PROBE OFFSET: " + String(ProbeOffset));
+                debug("[PENDANT] PROBE DEPTH: " + String(ProbeDepth));
+                debug("[PENDANT] PROBE SPEED: " + String(ProbeSpeed));
+                debug("[PENDANT] PROBE RISE: " + String(ProbeBackHeight));
+                debug("[PENDANT] PROBE TIME: " + String(ProbeTime));
 
-                Serial.println("[PENDANT] BLE HOST: " + String(BluetoothHost[0], HEX) + ":" + String(BluetoothHost[1], HEX) + ":" + String(BluetoothHost[2], HEX) + ":" + String(BluetoothHost[3], HEX) + ":" + String(BluetoothHost[4], HEX) + ":" + String(BluetoothHost[5], HEX));
-                Serial.println("[PENDANT] BLE PIN: " + String(BluetoothPin));
+                debug("[PENDANT] SLEEP TIME: " + String(SleepTime) + "min");
+                debug("[PENDANT] BRIGHTNESS: " + String(TFT_BRIGHTNESS));
 
-                Serial.println("[PENDANT] X JOG SPEED: " + String(JogSpeed[0]));
-                Serial.println("[PENDANT] Y JOG SPEED: " + String(JogSpeed[1]));
-                Serial.println("[PENDANT] Z JOG SPEED: " + String(JogSpeed[2]));
-                Serial.println("[PENDANT] A JOG SPEED: " + String(JogSpeed[3]));
+                debug("[PENDANT] -------- EEPROM END ---------");
 
-                Serial.println("[PENDANT] PROBE OFFSET: " + String(ProbeOffset));
-                Serial.println("[PENDANT] PROBE DEPTH: " + String(ProbeDepth));
-                Serial.println("[PENDANT] PROBE SPEED: " + String(ProbeSpeed));
-                Serial.println("[PENDANT] PROBE RISE: " + String(ProbeBackHeight));
-                Serial.println("[PENDANT] PROBE TIME: " + String(ProbeTime));
-
-                Serial.println("[PENDANT] SLEEP TIME: " + String(SleepTime) + "min");
-                Serial.println("[PENDANT] BRIGHTNESS: " + String(TFT_BRIGHTNESS));
-
-                Serial.println("[PENDANT] -------- EEPROM END ---------");
-
-        #endif
-
-}
+        }
 
 
 void configSave() {
@@ -101,7 +95,5 @@ void configSave() {
         serializeJson(configDoc, eepromConfigStream);
         EEPROM.commit();
 
-        #ifdef SERIAL_DEBUG 
-                Serial.print("[PENDANT] EEPROM JSON:    "); serializeJson(configDoc, Serial); Serial.println("");
-        #endif
+        debug("[PENDANT] EEPROM JSON SAVED");
 }

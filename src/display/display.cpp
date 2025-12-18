@@ -168,7 +168,7 @@ void TFTSleep() {
         adc_power_on();
 
         wxchange = true; wychange = true; wzchange = true, wachange = true; statechange = true;
-        EncoderValue = 0;
+        encoderValue = 0;
 
         bluetoothInit();
         bluetoothConnect();

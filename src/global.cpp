@@ -46,4 +46,4 @@ uint16_t BluetoothPin;
 bool BLEconnected = false;
 
 // ----- ENCODER -----
-volatile uint16_t EncoderValue = 0;
+volatile int16_t encoderValue = 0;
