@@ -10,6 +10,7 @@
 //   BUGS:
 //
 //      - im Config-Menü werden Encoder-Ticks gesendet
+//      - im Config-Menü werden Button-Clicks gesendet (danach)
 //      - Sleep funktioniert nicht richtig
 //      - 
 //      - 

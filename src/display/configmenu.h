@@ -23,8 +23,6 @@ extern BLEScan* pBLEScan;
  
 void configBLE();
 
-// void configBluetoothPin();
-
 void configJogging();
 void configJoggingX();
 void configJoggingY();
@@ -41,7 +39,5 @@ void configSleep();
 void configBrightness();
 void configBattery();
 void configInfo();
-
-//    void configOTA();
 
 
