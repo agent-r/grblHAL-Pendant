@@ -118,7 +118,7 @@ void TFTUpdate() {
 
 
 void TFTSleep() {
-
+/*
         SleepTicker.stop();
         KeypadTicker.stop();
         EncoderTicker.stop();
@@ -126,7 +126,7 @@ void TFTSleep() {
         MessageTicker.stop();
         TftTicker.stop();
 
-        debug("[PENDANT] sleep");
+        debug("SLEEP");
         
         // Turn off TFT
         analogWrite(TFT_LED, 0);
@@ -179,8 +179,8 @@ void TFTSleep() {
         // MessageTicker.start();
         // TftTicker.start();
 
-        debug("[PENDANT] wake up");
-
+        debug("WAKE UP");
+*/
 }
 
 

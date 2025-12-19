@@ -40,7 +40,7 @@ byte TFTConfigMenu(const String* Content, const int Length) {
         }
 
         while(true) {
-                delay(20);
+                delay(ENCODER_TICKER_TIME);
                 int count = readEncoder(); // rotaryEncoder.readEncoder();
                 if (count != 0) {
                         TFTConfigPrint(activeMenu, "  " + Content[activeMenu], TFT_COLOR_CNF_STD);
@@ -59,7 +59,9 @@ byte TFTConfigMenu(const String* Content, const int Length) {
 
 
 float TFTConfigValue(const String Title, const int Min, const int Max, float Value, const int Factor, const char* Unit, const byte leadingZeros) {
+
         // Factor -2=100, -1=10, 0=1, 1=0.1 2=0.01 etc.
+
         TFTConfigPrepare();
         TFTConfigPrint(0, Title, TFT_COLOR_CNF_STD);
         char strValue[20];
@@ -68,7 +70,7 @@ float TFTConfigValue(const String Title, const int Min, const int Max, float Val
         TFTConfigPrint(2, String(strValue), TFT_COLOR_CNF_STD);
 
         while (true) {
-                delay(20);
+                delay(ENCODER_TICKER_TIME);
                 int count = readEncoder(); // rotaryEncoder.readEncoder();
                 if (count != 0) {
                         Value = Value + (count * pow(10, Factor));
@@ -110,7 +112,7 @@ String TFTConfigString(const String Title, const String oldString) {
         tft.print(newString.substring(18, 36));
 
         do {
-                delay(20);
+                delay(ENCODER_TICKER_TIME);
                 int count = readEncoder(); // rotaryEncoder.readEncoder();
                 if (count != 0) {
 
@@ -199,6 +201,6 @@ void TFTConfigInfo(const String* Content, const int Length) {
                 TFTConfigPrint(i, Content[i], TFT_COLOR_CNF_STD);
         }
         while(!checkEnter()) {
-                delay(20);
+                delay(ENCODER_TICKER_TIME);
         }
 }

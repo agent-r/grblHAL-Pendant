@@ -10,10 +10,12 @@
 //////////////////////////////
 
 // DEBUG
-#define SERIAL_DEBUG          // General messages
-#define SERIAL_DEBUG_IN       // Bluetooth Inputs
-#define SERIAL_DEBUG_OUT      // Bluetooth Outputs
-// #define MESSAGE_DEBUG         // DEBUG via BLE / Wifi Message
+#define DEBUG_SERIAL 1// DEBUG Via Serial
+#define DEBUG_BLE    0 // DEBUG via BLE
+
+#define DEBUG_FLAG_SERIAL 0x01
+#define DEBUG_FLAG_BLE    0x02
+#define DEBUG_FLAG_BOTH   (DEBUG_FLAG_SERIAL | DEBUG_FLAG_BLE)
 
 //BLE
 #define BLE_MAX_PACKET 254   // maximal erwartete Paketgröße
@@ -51,6 +53,7 @@
 #define BUTTON_11_PIN 15        // ENTER
 #define BUTTON_TICKER_TIME 40               // Debounce for Buttons // was 80
 #define BUTTON_DEBOUNCE 10               // Debounce for Buttons // was 80
+#define BUTTON_CONFIRM_ENTER_TIME 1000
 
 // TFT
 /*

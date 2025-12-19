@@ -36,6 +36,9 @@ const int ConfigFields[12][5] = {
 
 void config() {
 
+        // PREPARE CONFIG MENU STATE
+        EncoderTicker.stop(); // DO NOT SEND ENCODER MOVEMENTS ANY MORE!
+
         const byte ContentNum = 10;
         const String Content[ContentNum] = {
                 "Config",
@@ -60,8 +63,7 @@ void config() {
                 case 6: configBrightness(); break;
                 case 7: configBattery(); break;
                 case 8: configInfo(); break;
-                // case 9: configOTA(); break;
-                case 9: configSave(); TFTPrepare(); bluetoothInit(); return;
+                case 9: configSave(); TFTPrepare(); EncoderTicker.start(); return; // CLEAR TFT, restart Encoder, exit Menu.
                 }
         }
 }
@@ -140,7 +142,7 @@ void configBluetoothAddress() {
         }
 
         while (true) {
-                delay(20);
+                delay(ENCODER_TICKER_TIME);
                 if (checkEnter()) {
                         activeByte++;
 
@@ -149,7 +151,7 @@ void configBluetoothAddress() {
                                 // for (int i = 0; i < 6; i++) { EEPROM.write(EEBluetoothHost + i, BluetoothHost[i]); }
                                 // EEPROM.commit();
                                 sprintf(strAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BluetoothHost[0],BluetoothHost[1],BluetoothHost[2],BluetoothHost[3],BluetoothHost[4],BluetoothHost[5]);
-                                debug("Bluetooth Host: " + String(strAddress));
+                                // debugf(DEBUG_FLAG_BOTH, "BLUETOOTH HOST: %s", strAddress);
                                 return;
                         }
 
@@ -221,7 +223,7 @@ class MyConfigAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
                         
                         memcpy(BLEAddressList[BLEDeviceNum], FoundDevice.getAddress().getNative(), 6);
 
-                        debug("NAME : " + BLEDeviceList[BLEDeviceNum] + " :   ADDRESS : " + FoundDevice.getAddress().toString().c_str());
+                        // debugf(DEBUG_FLAG_BOTH, "NAME : %d :   ADDRESS : %s", BLEDeviceList[BLEDeviceNum], FoundDevice.getAddress().toString());
 
                         TFTConfigPrint(BLEDeviceNum+1, "  " + BLEDeviceList[BLEDeviceNum], TFT_COLOR_CNF_STD);
                         TFTConfigPrint(BLEDeviceNum+2, "> Scanning...", TFT_COLOR_CNF_STD);
@@ -288,11 +290,11 @@ void configBLE() {
                                 memcpy(BluetoothHost, BLEAddressList[activeMenu-1], sizeof(BluetoothHost));
                                 copyArray(BluetoothHost, configDoc[EEBluetoothHost]);
                                 sprintf(strAddress,"%02x:%02x:%02x:%02x:%02x:%02x",BluetoothHost[0],BluetoothHost[1],BluetoothHost[2],BluetoothHost[3],BluetoothHost[4],BluetoothHost[5]);
-                                debug("Bluetooth Name: " + BLEDeviceList[activeMenu-1] + "  Bluetooth Host: " + String(strAddress));
+                                // debugf(DEBUG_FLAG_BOTH, "Bluetooth Name: %s  Bluetooth Host: %s", BLEDeviceList[activeMenu-1], strAddress);
                                 return;
                         }
                 }
-                delay(20);
+                delay(ENCODER_TICKER_TIME);
         }
 }
 
@@ -329,28 +331,28 @@ void configJogging() {
 void configJoggingX() {
         // JogSpeed[0] = EepromReadInt(EEJogSpeed);
         JogSpeed[0] = (int)TFTConfigValue("Jogging X", 0, 10000, JogSpeed[0], 2, " mm/min", 0);
-        debug("CONFIG : JogSpeedX : " + String(JogSpeed[0]));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : JogSpeedX : %d", JogSpeed[0]);
         configDoc[EEJogSpeed][0] = JogSpeed[0];
         // EepromWriteInt(JogSpeed[0], EEJogSpeed);
 }
 void configJoggingY() {
         // JogSpeed[1] = EepromReadInt(EEJogSpeed+2);
         JogSpeed[1] = (int)TFTConfigValue("Jogging Y", 0, 10000, JogSpeed[1], 2, " mm/min", 0);
-        debug("CONFIG : JogSpeedY : " + String(JogSpeed[1]));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : JogSpeedY : %d", JogSpeed[1]);
         configDoc[EEJogSpeed][1] = JogSpeed[1];
         // EepromWriteInt(JogSpeed[1], EEJogSpeed+2);
 }
 void configJoggingZ() {
         // JogSpeed[2] = EepromReadInt(EEJogSpeed+4);
         JogSpeed[2] = (int)TFTConfigValue("Jogging Z", 0, 10000, JogSpeed[2], 2, " mm/min", 0);
-        debug("CONFIG : JogSpeedZ : " + String(JogSpeed[2]));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : JogSpeedZ : %d", JogSpeed[2]);
         configDoc[EEJogSpeed][2] = JogSpeed[2];
         // EepromWriteInt(JogSpeed[2], EEJogSpeed+4);
 }
 void configJoggingA() {
         // JogSpeed[3] = EepromReadInt(EEJogSpeed+6);
         JogSpeed[3] = (int)TFTConfigValue("Jogging A", 0, 32000, JogSpeed[3], 2, " mm/min", 0);
-        debug("CONFIG : JogSpeedA : " + String(JogSpeed[3]));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : JogSpeedA : %d", JogSpeed[3]);
         configDoc[EEJogSpeed][3] = JogSpeed[3];
         // EepromWriteInt(JogSpeed[3], EEJogSpeed+6);
 }
@@ -410,66 +412,50 @@ void configProbe() {
 
 
 void configProbeOffset() {
-        // ProbeOffset = EepromReadFloat(EEProbeOffset);
-        // float ProbeOffsetFloat = ProbeOffset / 100.0;
         ProbeOffset = TFTConfigValue("Probe Offset", 0, 50, ProbeOffset, -2, " mm", 0);
-        // ProbeOffset = (int)(ProbeOffsetFloat * 100);
-        debug("CONFIG : ProbeOffset : " + String(ProbeOffset));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : ProbeOffset : %.3f", ProbeOffset);
         configDoc[EEProbeOffset] = ProbeOffset;
-        // EepromWriteFloat(ProbeOffset, EEProbeOffset);
 }
 
 
 void configProbeDepth() {
-        // ProbeDepth = EepromReadInt(EEProbeDepth);
         if (ProbeDepth > 32767) { ProbeDepth = ProbeDepth - 65536; }  // 65535
         ProbeDepth = (int)TFTConfigValue("Probe Depth", -100, 100, ProbeDepth, 0, " mm", 0);
-        debug("CONFIG : ProbeDepth : " + String(ProbeDepth));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : ProbeDepth : %d", ProbeDepth);
         configDoc[EEProbeDepth] = ProbeDepth;
-        // EepromWriteInt(ProbeDepth, EEProbeDepth);
 }
 
 
 void configProbeSpeed() {
-        // ProbeSpeed = EepromReadInt(EEProbeSpeed);
         ProbeSpeed = (int)TFTConfigValue("Probe Speed", 0, 1000, ProbeSpeed, 0, " mm / min", 0);
-        debug("CONFIG : ProbeSpeed : " + String(ProbeSpeed));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : ProbeSpeed : %d", ProbeSpeed);
         configDoc[EEProbeSpeed] = ProbeSpeed;
-        // EepromWriteInt(ProbeSpeed, EEProbeSpeed);
 }
 
 
 void configProbeBackHeight() {
-        // ProbeBackHeight = EEPROM.read(EEProbeBackHeight);
         ProbeBackHeight = (byte)TFTConfigValue("Probe Rise", 0, 100, ProbeBackHeight, 0, " mm", 0);
-        debug("CONFIG : ProbeBackHeight : " + String(ProbeBackHeight));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : ProbeBackHeight : %d", ProbeBackHeight);
         configDoc[EEProbeBackHeight] = ProbeBackHeight;
-        // EEPROM.write(EEProbeBackHeight, ProbeBackHeight);
-        // EEPROM.commit();
 }
 
 void configProbeTime() {
-        // ProbeTime = EEPROM.read(EEProbeTime);
         ProbeTime = (byte)TFTConfigValue("Probe Time", 1, 20, ProbeTime, 0, " sec", 0);
-        debug("CONFIG : ProbeTime : " + String(ProbeTime));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : ProbeTime : %d", ProbeTime);
         configDoc[EEProbeTime] = ProbeTime;
-        // EEPROM.write(EEProbeTime, ProbeTime);
-        // EEPROM.commit();
 }
 
 void configSleep() {
-        // SleepTime = EEPROM.read(EESleepTime);
         SleepTime = (byte)TFTConfigValue("Sleep Time", 0, 20, SleepTime, 0, " min", 0);
-        debug("CONFIG : SleepTime : " + String(SleepTime));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : SleepTime : %d", SleepTime);
         configDoc[EESleepTime] = SleepTime;
         SleepTicker.interval(SleepTime * 60000);
         if (SleepTime == 0) { SleepTicker.stop(); }
 }
 
 void configBrightness() {
-        // TFT_BRIGHTNESS = EEPROM.read(EEBrightness);
         TFT_BRIGHTNESS = (byte)TFTConfigValue("Brightness", 0, 255, TFT_BRIGHTNESS, 0, "", 0);
-        debug("CONFIG : TftBrightness : " + String(TFT_BRIGHTNESS));
+        // debugf(DEBUG_FLAG_BOTH, "CONFIG : TftBrightness : %d", TFT_BRIGHTNESS);
         configDoc[EEBrightness] = TFT_BRIGHTNESS;
         analogWrite(TFT_LED, TFT_BRIGHTNESS);
 }
@@ -501,49 +487,3 @@ void configInfo() {
         };
         TFTConfigInfo(Content, ContentNum);
 }
-
-/*
-   void configOTA() {
-        const char * otassid = "OTA";       // You will connect your penant to this Access Point
-        const char * otapw = "OTAOTA00";        // and this is the password
-        const IPAddress otaip(192, 168, 0, 1);       // this is the ip
-        const IPAddress otanetmask(255, 255, 255, 0);
-        // const int otaport = 8880;
-
-        const byte ContentNum = 10;
-        String Content[ContentNum] = {
-                "Firmware",
-                "OTA-Upload:",
-                "",
-                "NOT WORKING YET!",
-                "",
-                "SSID: \"OTA\"",
-                "PW:   \"OTAOTA00\"",
-                "IP:   192.168.0.1",
-                "",
-                "Back"
-        };
-
-        WiFi.disconnect();
-        WiFi.mode(WIFI_AP);
-        WiFi.softAPConfig(otaip, otaip, otanetmask);
-        WiFi.softAP(otassid, otapw);
-        // WiFi.softAP(otassid);
-        // ArduinoOTA.begin();
-
-        // Content[5] = "IP:   " + WiFi.softAPIP().toString();
-
-        TFTConfigPrepare();
-        for (int i = 0; i < ContentNum; i++) {
-                TFTConfigPrint(i, Content[i], TFT_COLOR_CNF_STD);
-        }
-
-        while(!checkEnter()) {
-                // ArduinoOTA.handle();
-        }
-
-        // ArduinoOTA.end();
-        WiFi.softAPdisconnect (true);
-
-   }
- */

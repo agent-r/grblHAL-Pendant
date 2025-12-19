@@ -13,25 +13,21 @@
 static BLEUUID SERVICE_UUID("825aeb6e-7e1d-4973-9c75-30c042c4770c");
 static BLEUUID TX_CHARACTERISTIC_UUID("24259347-9d86-4c67-a9ae-84f6a7f0c90d");
 static BLEUUID RX_CHARACTERISTIC_UUID("b52e05ac-8a8a-4880-85c7-bd3e6a32dc0e");
+
 static BLERemoteCharacteristic* Tx_Characteristic;
 static BLERemoteCharacteristic* Rx_Characteristic;
 
 BLEClient *pClient = nullptr;
+
 
 struct BlePacket {
         uint8_t data[BLE_MAX_PACKET];
         size_t len;
     };
 
-// static QueueHandle_t bleQueue;
 
 // Callback When the BLE Bridge sends a new state
 void Rx_NotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
-
-//                if (length > BLE_MAX_PACKET) { length = BLE_MAX_PACKET; }
-//                memcpy(ble_rx_buffer, pData, length);
-//                ble_rx_len = length;
-//                ble_new_data = true;
 
         BlePacket pkt;
         pkt.len = length > BLE_MAX_PACKET ? BLE_MAX_PACKET : length;
@@ -45,12 +41,12 @@ class MyClientCallback : public BLEClientCallbacks {
 
         void onConnect(BLEClient* pclient) {
                 BLEconnected = true;
-                debug("[PENDANT] connected");
+                debug("BLE CONNECTED");
         }
 
         void onDisconnect(BLEClient* pclient) {
                 BLEconnected = false;
-                debug("[PENDANT] BLE disconnected");
+                debug("BLE DISCONNECTED");
         }
 
 };
@@ -58,10 +54,7 @@ class MyClientCallback : public BLEClientCallbacks {
 
 
 void bluetoothInit() {
-
-        debug("[PENDANT] Setting up BLE Connection");
         BLEDevice::init("");
-        // bleQueue = xQueueCreate(10, BLE_MAX_PACKET); // max 5 Pakete
 }
 
 
@@ -81,8 +74,6 @@ bool bluetoothConnect() {
                 // Set Callbacks for BLE Client
                 pClient->setClientCallbacks(new MyClientCallback());
 
-                // Scan for GRBLHAL Server first ??
-
                 // connect to GRBLHAL Server
                 if (pClient->connect(BluetoothHost) == false) { 
                         if (checkConfig()) { config(); }        // chance to enter config
@@ -94,14 +85,13 @@ bool bluetoothConnect() {
 
                 BLERemoteService* pRemoteService = pClient->getService(SERVICE_UUID);
                 if (pRemoteService == nullptr) {
-                        // debug("[PENDANT] Failed to find our service UUID:" + String(SERVICE_UUID.toString().c_str()));
-                        debug("[PENDANT] Failed to find our service UUID:");
+                        debugf(DEBUG_FLAG_SERIAL, "BLUETOOTH FAILED TO FIND SERVICE UUID: %s", SERVICE_UUID.toString());
                         return(false);
                 }
         
                 Rx_Characteristic = pRemoteService->getCharacteristic(RX_CHARACTERISTIC_UUID);
                 if (Rx_Characteristic == nullptr) {
-                        debug("[PENDANT] Failed to find RX characteristic UUID");
+                        debugf(DEBUG_FLAG_SERIAL, "BLUETOOTH FAILED TO FIND RX CHARACTERISTIC UUID");
                         return false;
                 }
                 Rx_Characteristic->registerForNotify(Rx_NotifyCallback); //Assign callback functions for the Characteristics
@@ -109,7 +99,7 @@ bool bluetoothConnect() {
                 
                 Tx_Characteristic = pRemoteService->getCharacteristic(TX_CHARACTERISTIC_UUID);
                 if (Tx_Characteristic == nullptr) {
-                        debug("[PENDANT] Failed to find TX characteristic UUID");
+                        debugf(DEBUG_FLAG_SERIAL, "BLUETOOTH FAILED TO FIND TX CHARACTERISTIC UUID");
                         return false;
                 }
 
@@ -130,7 +120,7 @@ void bluetoothParse(const uint8_t* data, size_t len) {
         JsonDocument JsonIn;
         DeserializationError err = deserializeJson(JsonIn, data, len);
         if (err) {
-            Serial.println("[PENDANT] BLE Parser - JSON Error");
+            debug("BLUETOOTH RX PARSER JSON ERROR");
             return;
         }
     
@@ -154,15 +144,7 @@ void bluetoothParse(const uint8_t* data, size_t len) {
         wa = JsonIn["wa"].as<float>();
         if (waold != wa) { wachange = true; }
 
-        /*
-        const char* state = JsonIn["state"];
-        float wx = JsonIn["wx"];
-        float wy = JsonIn["wy"];
-        float wz = JsonIn["wz"];
-        float wa = JsonIn["wa"];
-        */
-    
-        Serial.printf("[PENDANT] PARSED: state=%s, wx=%.3f, wy=%.3f, wz=%.3f, wa=%.3f\n", state, wx, wy, wz, wa);
+        debugf(DEBUG_FLAG_SERIAL, "PARSED: state=%s, wx=%.3f, wy=%.3f, wz=%.3f, wa=%.3f", state, wx, wy, wz, wa);
 
 }
 
@@ -175,13 +157,8 @@ void bluetoothSend(const String& type, const String& cmd, const String& cmd_info
 
         if (bluetoothConnect())
         {
-
                 Tx_Characteristic->writeValue(reinterpret_cast<uint8_t*>(jsonBuf), jsonLen);
-
-                #ifdef SERIAL_DEBUG_OUT
-                        Serial.println("[PENDANT] SENT: " + String(jsonBuf));
-                #endif
-
+                debugf(DEBUG_FLAG_SERIAL, "SENT: %s", jsonBuf);
                 TFTPrint(MessageField, cmd_info, TFT_COLOR_MSG_NRM);
         }
         else {

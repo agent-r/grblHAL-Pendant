@@ -81,34 +81,30 @@ void setup() {
         // DISABLE BROWNOUT DETECTOR
         WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
 
-        // INITIALIZE THINGS
-        serialInit();
-        debug("[PENDANT] started");
+        // INITIALIZE SERIAL
+        delay(250); 
+        serialInit();     
+        debug("SERIAL INITIALIZED");
 
-        configInit();
+        configLoad();
+        bluetoothInit(); debug("BLUETOOTH INITIALIZED");
 
-        bluetoothInit();
+        TFTInit(); debug("TFT INITIALIZED");
+        controlsInit(); debug("CONTROLS INITIALIZED");
 
-        TFTInit();
-        debug("[PENDANT] tft started");
-
-        controlsInit();
-        debug("[PENDANT] controls started");
-
-        
-        // CHECK IF CONFIG IS NEEDED
-        if (checkConfig()) { config(); }
 
         // CONNECT
-        bluetoothConnect();
-        debug("[PENDANT] bluetooth connected");
+        bluetoothConnect(); 
 
         // START TICKERS
         // TftTicker.start();
         if (SleepTime > 0) { SleepTicker.start(); }
-        KeypadTicker.start();
         EncoderTicker.start();
-        debug("[PENDANT] tickers started");
+        KeypadTicker.start();
+        debug("TICKERS STARTED");
+
+        // CHECK IF CONFIG BUTTON IS PRESSED
+        if (checkConfig()) { config(); }
 
 }
 

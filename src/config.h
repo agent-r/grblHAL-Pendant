@@ -8,5 +8,5 @@
 
 extern JsonDocument configDoc;
 
-void configInit();
+void configLoad();
 void configSave();

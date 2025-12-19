@@ -135,13 +135,10 @@ void sendEncoder() {
         int msglength = snprintf(msg, sizeof(msg), "JOG %s%.3f", AxisName[activeAxis], distance);
 
         // Falls das Buffer zu klein war → n >= sizeof(gcode)
-        if (gcodelength < 0 || (size_t)gcodelength >= sizeof(gcode)) { debug("[PENDANT] GCode Buffer overflow"); return; }
-        if (msglength < 0 || (size_t)msglength >= sizeof(msg)) { debug("[PENDANT] Msg Buffer overflow"); return; }
+        if (gcodelength < 0 || (size_t)gcodelength >= sizeof(gcode)) { debug("GCODE BUFFER OVERFLOW"); return; }
+        if (msglength < 0 || (size_t)msglength >= sizeof(msg)) { debug("MESSAGE BUFFER OVERFLOW"); return; }
     
-        #ifdef SERIAL_DEBUG 
-                Serial.printf("[PENDANT] ENCODER: %d\n", sendValue);
-        #endif
-
+        // debugf(DEBUG_FLAG_SERIAL, "ENCODER: %d", sendValue);
         bluetoothSend("gcode", String(gcode), String(msg));
 
         if (SleepTime > 0) { SleepTicker.start(); }
@@ -194,9 +191,9 @@ uint8_t readKeypad() {
 
 void handleKeypadEvent(uint8_t pressedButton) {
 
-        #ifdef SERIAL_DEBUG
-                if (pressedButton != 12) { Serial.printf("[PENDANT] BUTTON PRESSED: %d\n", pressedButton) ;}
-        #endif
+        if (pressedButton != 12) { 
+                // debugf(DEBUG_FLAG_SERIAL, "BUTTON PRESSED: %d", pressedButton) ;
+        }
 
         if (SleepTime > 0) { SleepTicker.start(); }
 
@@ -220,33 +217,31 @@ void handleKeypadEvent(uint8_t pressedButton) {
 
 
 bool checkEnter() {
-
         Button11.read();
         if (Button11.wasReleased()) { return(true); }
+        // else if (Button11.isPressed()) { return(true); }
         else { return(false); }
-
 }
 
 
 bool checkEnterConfirm() {
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < (BUTTON_CONFIRM_ENTER_TIME / BUTTON_DEBOUNCE); i++) {
                 if (checkEnter()) { return(true); }
-                TftTicker.update();
+                TFTUpdate();
                 delay(BUTTON_DEBOUNCE);
         }
         return(false);
 }
 
+
 bool checkConfig() {
 
         Button5.read();
-        if (Button5.wasReleased()) { return(true); }
-        else if (Button5.isPressed()) { return(true); }
+        if (Button5.wasReleased())    { debug("CONFIG BUTTON PRESSED - ENTER CONFIG"); return(true); }
+        // else if (Button5.isPressed()) { debug("CONFIG BUTTON PRESSED - ENTER CONFIG"); return(true); }
         else { return(false); }
 
 }
-
-
 
 void decreaseAxis() {
         if (activeAxis <= 0) { activeAxis = 3; }
@@ -282,8 +277,7 @@ void probeZ() {
                 bluetoothSend("gcode", "G38.2Z" + String(ProbeDepth) + "F" + String(ProbeSpeed), "PROBE: GO DOWN"); delay(100);
 
                 for (int i = 0; i < (ProbeTime * 50); i++) {
-                        // CAN THIS BE DONE WIHT A "DWELL"-COMMAND (=> WAIT FOR BUFFER EMPTY) ???
-                        TftTicker.update();
+                        TFTUpdate();
                         if (state == "Run") { run_check = true; }
                         if ((state == "Idle") && run_check) { break; }
 

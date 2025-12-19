@@ -10,7 +10,7 @@
 
 JsonDocument configDoc;
 
-void configInit() {
+void configLoad() {
 
         // EEPROM
         EEPROM.begin(EEPROM_LENGTH);
@@ -19,7 +19,7 @@ void configInit() {
         DeserializationError jsonError = deserializeJson(configDoc, eepromConfigStream);
                 if (jsonError) {
 
-                        debug("deserializeJson() failed:");
+                        debug("EEPROM DESERIALIZE FAILED");
 
                         // set defaults:
                         memset(BluetoothHost, 9, sizeof(BluetoothHost));
@@ -51,26 +51,26 @@ void configInit() {
                         TFT_BRIGHTNESS = configDoc[EEBrightness];
                 }
 
-                debug("[PENDANT] ------- EEPROM DATA ---------");
+                debug("------- EEPROM DATA ---------");
+                debugf(DEBUG_FLAG_BOTH, "BLE HOST: %02X:%02X:%02X:%02X:%02X:%02X", BluetoothHost[0], BluetoothHost[1], BluetoothHost[2], BluetoothHost[3], BluetoothHost[4], BluetoothHost[5]);
+                  
+                debugf(DEBUG_FLAG_BOTH, "BLE PIN: %d", BluetoothPin);
+                  
+                debugf(DEBUG_FLAG_BOTH, "X JOG SPEED: %d", JogSpeed[0]);
+                debugf(DEBUG_FLAG_BOTH, "Y JOG SPEED: %d", JogSpeed[1]);
+                debugf(DEBUG_FLAG_BOTH, "Z JOG SPEED: %d", JogSpeed[2]);
+                debugf(DEBUG_FLAG_BOTH, "A JOG SPEED: %d", JogSpeed[3]);
+        
+                debugf(DEBUG_FLAG_BOTH, "PROBE OFFSET: %f", ProbeOffset);
+                debugf(DEBUG_FLAG_BOTH, "PROBE DEPTH: %f", ProbeDepth);
+                debugf(DEBUG_FLAG_BOTH, "PROBE SPEED: %f", ProbeSpeed);
+                debugf(DEBUG_FLAG_BOTH, "PROBE RISE: %f", ProbeBackHeight);
+                debugf(DEBUG_FLAG_BOTH, "PROBE TIME: %d", ProbeTime);
+                  
+                debugf(DEBUG_FLAG_BOTH, "SLEEP TIME: %d DEBUG_FLAG_BOTH, min", SleepTime);
+                debugf(DEBUG_FLAG_BOTH, "BRIGHTNESS: %d DEBUG_FLAG_BOTH,", TFT_BRIGHTNESS);
 
-                debug("[PENDANT] BLE HOST: " + String(BluetoothHost[0], HEX) + ":" + String(BluetoothHost[1], HEX) + ":" + String(BluetoothHost[2], HEX) + ":" + String(BluetoothHost[3], HEX) + ":" + String(BluetoothHost[4], HEX) + ":" + String(BluetoothHost[5], HEX));
-                debug("[PENDANT] BLE PIN: " + String(BluetoothPin));
-
-                debug("[PENDANT] X JOG SPEED: " + String(JogSpeed[0]));
-                debug("[PENDANT] Y JOG SPEED: " + String(JogSpeed[1]));
-                debug("[PENDANT] Z JOG SPEED: " + String(JogSpeed[2]));
-                debug("[PENDANT] A JOG SPEED: " + String(JogSpeed[3]));
-
-                debug("[PENDANT] PROBE OFFSET: " + String(ProbeOffset));
-                debug("[PENDANT] PROBE DEPTH: " + String(ProbeDepth));
-                debug("[PENDANT] PROBE SPEED: " + String(ProbeSpeed));
-                debug("[PENDANT] PROBE RISE: " + String(ProbeBackHeight));
-                debug("[PENDANT] PROBE TIME: " + String(ProbeTime));
-
-                debug("[PENDANT] SLEEP TIME: " + String(SleepTime) + "min");
-                debug("[PENDANT] BRIGHTNESS: " + String(TFT_BRIGHTNESS));
-
-                debug("[PENDANT] -------- EEPROM END ---------");
+                debug("-------- EEPROM END ---------");
 
         }
 
@@ -95,7 +95,26 @@ void configSave() {
         serializeJson(configDoc, eepromConfigStream);
         EEPROM.commit();
 
-        debug("[PENDANT] EEPROM JSON SAVED");
+        debug("------- EEPROM DATA SAVED ---------");
+        debugf(DEBUG_FLAG_BOTH, "BLE HOST: %02X:%02X:%02X:%02X:%02X:%02X", BluetoothHost[0], BluetoothHost[1], BluetoothHost[2], BluetoothHost[3], BluetoothHost[4], BluetoothHost[5]);
+          
+        debugf(DEBUG_FLAG_BOTH, "BLE PIN: %d", BluetoothPin);
+          
+        debugf(DEBUG_FLAG_BOTH, "X JOG SPEED: %d", JogSpeed[0]);
+        debugf(DEBUG_FLAG_BOTH, "Y JOG SPEED: %d", JogSpeed[1]);
+        debugf(DEBUG_FLAG_BOTH, "Z JOG SPEED: %d", JogSpeed[2]);
+        debugf(DEBUG_FLAG_BOTH, "A JOG SPEED: %d", JogSpeed[3]);
+          
+        debugf(DEBUG_FLAG_BOTH, "PROBE OFFSET: %f", ProbeOffset);
+        debugf(DEBUG_FLAG_BOTH, "PROBE DEPTH: %f", ProbeDepth);
+        debugf(DEBUG_FLAG_BOTH, "PROBE SPEED: %f", ProbeSpeed);
+        debugf(DEBUG_FLAG_BOTH, "PROBE RISE: %f", ProbeBackHeight);
+        debugf(DEBUG_FLAG_BOTH, "PROBE TIME: %d", ProbeTime);
+          
+        debugf(DEBUG_FLAG_BOTH, "SLEEP TIME: %d min", SleepTime);
+        debugf(DEBUG_FLAG_BOTH, "BRIGHTNESS: %d", TFT_BRIGHTNESS);
+
+        debug("-------- EEPROM END ---------");
 
         if (SleepTime > 0) {
                 SleepTicker.interval(SleepTime * 60000);
