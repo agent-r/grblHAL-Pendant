@@ -1,128 +1,59 @@
-/////////////////////////////////////////
-//
-//   GRBLHAL PENDANT
-//
-/////////////////////////////////////////
 
-
-/////////////////////////////////////////
-//
-//   BUGS:
-//
-//      - im Config-Menü werden Encoder-Ticks gesendet
-//      - im Config-Menü werden Button-Clicks gesendet (danach)
-//      - Sleep funktioniert nicht richtig
-//      - 
-//      - 
-//
-//   TODO:
-//
-//
-//
-//
-//
-/////////////////////////////////////////
-
-
-
-
-
-
-
-
-// PINS
-////////////////////////////////////////
-// 36   ROT CLK : A
-// 39   ROT DT  : B
-// 32   KEY AX-
-// 33   KEY AX+
-// 05   KEY SET0
-// 25   KEY GOTO0
-// 26   KEY PROBE
-// 27   KEY CONFIG
-// 14   KEY FEED-
-// 13   KEY FEED+
-// 16   KEY HOME
-// 04   KEY STOP
-// 02   KEY RESET
-// 15   KEY ENTER
-// 21   TFT DC
-// 18   TFT SCK
-// --   TFT MISO
-// 23   TFT MOSI
-// 22   TFT CS
-// 17   TFT LED
-// VCC  TFT RESET
-// 34   BATTERY VOLTAGE DIVIDER // NOT USED!
-
-
-// LOCAL INCLUDES
-#include "communication/serial.h"
-#include "communication/bluetooth.h"
-#include "communication/debug.h"
-#include "controls/controls.h"
-#include "display/configfunct.h"
-#include "display/configmenu.h"
+#include "bluetooth/bluetooth.h"
+#include "controller/controller.h"
+#include "debug/debug.h"
 #include "display/display.h"
-#include "display/fonts.h"
-#include "config.h"
-#include "global.h"
+#include "global/global.h"
+#include "global/eeprom.h"
+#include "global/timer.h"
+#include "input/input.h"
 
-// LIBRARIES
-#include <soc/soc.h>                // TO DISABLE BROWNOUT DETECTOR) !!
-#include <soc/rtc.h>                // TO DISABLE BROWNOUT DETECTOR) !!
+//////////////////////////////////////////////
+//
+//    TODOs:
+//    -
+//    - InfoScreen (vorher clearen!)
+//    - Battery?
+//    - Sleep - wakeup from several pins?
+//    - EEPROM debug-write crashes!
+//    - (re-)connect after Config
+//
+///////////////////////////////////////////////
+//
+//    - TEST BRIDGE:        GRBLHAL > 7C:9E:BD:62:46:02
+//    - PRODUCTIVE BRIDGE:  GRBLHAL > 0C:B8:15:C3:B1:EA
+//
+//
+/////////////////////////////////////////////
 
+void setup()
+{
 
-///////////////////////////////////////////////////////////////////////////
-///////////////////////      SETUP       //////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
+  debugQueue = xQueueCreate(20, sizeof(DebugEvent));
+  xTaskCreatePinnedToCore(DebugTask, "Debug", TASK_STACK_SIZE, NULL, DEBUG_TASK_PRIO, NULL, 0); // before loading eeprom
 
-void setup() {
+  // TaskHandle_t timerTaskHandle = nullptr;
+  timerQueue = xQueueCreate(10, sizeof(TimerEvent));
+  xTaskCreatePinnedToCore(TimerTask, "Timer", TASK_STACK_SIZE_TIMER, NULL, TIMER_TASK_PRIO, NULL, 1);
 
-        // DISABLE BROWNOUT DETECTOR
-        WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+  // defaultsLoad();
+  eepromLoad();
 
-        // INITIALIZE SERIAL
-        delay(250); 
-        serialInit();     
-        debug("SERIAL INITIALIZED");
+  inputQueue = xQueueCreate(10, sizeof(InputEvent));
+  bleTxQueue = xQueueCreate(8, sizeof(BLETxEvent));
+  bleRxQueue = xQueueCreate(8, sizeof(BLERxEvent));
+  bleCmdQueue = xQueueCreate(8, sizeof(BLECmd));
+  bleScanEventQueue = xQueueCreate(8, sizeof(BLEScanEvent));
+  displayQueue = xQueueCreate(10, sizeof(DisplayEvent));
 
-        configLoad();
-        bluetoothInit(); debug("BLUETOOTH INITIALIZED");
+  xTaskCreatePinnedToCore(InputTask, "Input", TASK_STACK_SIZE, NULL, INPUT_TASK_PRIO, NULL, 0);
+  xTaskCreatePinnedToCore(BLETask, "BLE", TASK_STACK_SIZE, NULL, BLE_TASK_PRIO, NULL, 0);
 
-        TFTInit(); debug("TFT INITIALIZED");
-        controlsInit(); debug("CONTROLS INITIALIZED");
-
-
-        // CONNECT
-        bluetoothConnect(); 
-
-        // START TICKERS
-        // TftTicker.start();
-        if (SleepTime > 0) { SleepTicker.start(); }
-        EncoderTicker.start();
-        KeypadTicker.start();
-        debug("TICKERS STARTED");
-
-        // CHECK IF CONFIG BUTTON IS PRESSED
-        if (checkConfig()) { config(); }
-
+  xTaskCreatePinnedToCore(ControlTask, "Control", TASK_STACK_SIZE, NULL, CONTROL_TASK_PRIO, NULL, 1);
+  xTaskCreatePinnedToCore(DisplayTask, "Display", TASK_STACK_SIZE, NULL, DISPLAY_TASK_PRIO, NULL, 1);
 }
 
-///////////////////////////////////////////////////////////////////////////
-///////////////////////      LOOP        //////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
-
-void loop() {
-
-        // TftTicker.update();
-        checkEncoder();
-
-        EncoderTicker.update();
-        KeypadTicker.update();
-        MessageTicker.update();
-        SleepTicker.update();
-
+void loop()
+{
+  vTaskDelay(portMAX_DELAY);
 }
-

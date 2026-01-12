@@ -1,238 +1,117 @@
-
-///////////////////////////////////////////////////////////////////////////
-///////////////////////       DISPLAY       ///////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
 #include <Arduino.h>
-#include <TickTwo.h>                // TICKER
-#include <TFT_eSPI.h>               // TFT
-#include <SPI.h>                    // TFT
-#include "driver/adc.h"             // FOR SLEEP !
+#include <TFT_eSPI.h>
+#include "global/global.h"
+#include "display/display.h"
+#include "display/display_functions.h"
 
-#include "display.h"
-#include "global.h"
-#include "communication/bluetooth.h"
-#include "communication/debug.h"
-#include "controls/controls.h"
-
-
-
-const int Fields[7][5] = {
-        {10, 20, 220, 35, 3},       // Field X
-        {10, 60, 220, 35, 3},       // Field Y
-        {10, 100, 220, 35, 3},      // Field Z
-        {10, 140, 220, 35, 3},      // Field A
-        {10, 190, 220, 35, 3},      // Field F
-        {10, 245, 220, 28, 2},      // Field Status
-        {10, 278, 220, 28, 2}       // Field Message
-};
-const int Line[4] = {0,234,240};
-
-uint64_t SleepPinMask = 0;
-
-// --------------------------------------
-// TFT TICKER
+QueueHandle_t displayQueue = nullptr;
 TFT_eSPI tft = TFT_eSPI();
-void TFTUpdate();
-TickTwo TftTicker(TFTUpdate, (1000 / TFT_FPS));
 
-void TFTBlink();
-TickTwo BlinkTicker(TFTBlink, (1000 / BLINK_FPS));
-bool blinker = true;
-bool blinker_change = true;
+// --------------------------------------------------------------
 
-void TFTMessage();
-TickTwo MessageTicker(TFTMessage, (1000 * TFT_MESSAGE_TIME));
+void DisplaySetup()
+{
 
-// SLEEP
-void TFTSleep();
-TickTwo SleepTicker(TFTSleep, (60000 * SleepTime)); // 60000
+    tft.begin();
+    tft.setRotation(TFT_ROTATION);
+    pinMode(TFT_LED_PIN, OUTPUT);
+    analogWrite(TFT_LED_PIN, config.TFTBrightness);
 
+    TFTPrepare();
 
-
-// --------------------------------------
-// TFT INIT
-void TFTInit() {
-
-        // START TFT (after Connection setup. sometimes stays black otherwise)
-        tft.begin();
-        tft.setRotation(TFT_ROTATION);
-        pinMode(TFT_LED, OUTPUT);
-        analogWrite(TFT_LED, TFT_BRIGHTNESS); 
-        TFTPrepare();
+    DisplayEvent ev = {};
+    TFTPrint(0, ev.state.x, (ev.state.activeAxisIndex == 0) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+    TFTPrint(1, ev.state.y, (ev.state.activeAxisIndex == 1) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+    TFTPrint(2, ev.state.z, (ev.state.activeAxisIndex == 2) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+    TFTPrint(3, ev.state.a, (ev.state.activeAxisIndex == 3) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+    TFTPrint(4, ev.state.jogFactor, TFT_COLOR_XYZ_INACTIVE);
+    TFTPrint(5, ev.state.machineState, TFT_COLOR_STA_NRM);
+    TFTPrint(6, ev.state.message, TFT_COLOR_MSG_NRM);
 
 }
 
-void TFTUpdate() {
+void DisplayTask(void *pv)
+{
 
-        if (wxchange || axischange) {
-                char strwx[7];
-                dtostrf(wx,7,2,strwx);
-                if (activeAxis == 0) { TFTPrint(XField, "> X: " + String(strwx), TFT_COLOR_XYZ); tft.drawRect(Fields[XField][0],Fields[XField][1],Fields[XField][2],Fields[XField][3],TFT_COLOR_FRM_LIN); }
-                else { TFTPrint(XField, "  X: " + String(strwx), TFT_COLOR_XYZ_INACTIVE);}
-                wxchange = false;
+    DisplaySetup();
+
+    DisplayEvent ev = {};
+
+    for (;;)
+    {
+        if (xQueueReceive(displayQueue, &ev, portMAX_DELAY))
+        {
+            switch (ev.type)
+            {
+
+            case DISP_PREPARE:
+                TFTPrepare();
+                TFTPrint(0, ev.state.x, (ev.state.activeAxisIndex == 0) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+                TFTPrint(1, ev.state.y, (ev.state.activeAxisIndex == 1) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+                TFTPrint(2, ev.state.z, (ev.state.activeAxisIndex == 2) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+                TFTPrint(3, ev.state.a, (ev.state.activeAxisIndex == 3) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE);
+                TFTPrint(4, ev.state.jogFactor, TFT_COLOR_XYZ_INACTIVE);
+                TFTPrint(5, ev.state.machineState, TFT_COLOR_STA_NRM);
+                TFTPrint(6, ev.state.message, TFT_COLOR_MSG_NRM);
+                break;
+
+            case DISP_UPDATE_STATUS:
+
+                if (ev.state.xChanged || ev.state.axisChanged) { TFTPrint(0, ev.state.x, (ev.state.activeAxisIndex == 0) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE); }
+                if (ev.state.yChanged || ev.state.axisChanged) { TFTPrint(1, ev.state.y, (ev.state.activeAxisIndex == 1) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE); }
+                if (ev.state.zChanged || ev.state.axisChanged) { TFTPrint(2, ev.state.z, (ev.state.activeAxisIndex == 2) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE); }
+                if (ev.state.aChanged || ev.state.axisChanged) { TFTPrint(3, ev.state.a, (ev.state.activeAxisIndex == 3) ? TFT_COLOR_XYZ : TFT_COLOR_XYZ_INACTIVE); }
+                if (ev.state.jogFactorChanged) { TFTPrint(4, ev.state.jogFactor, TFT_COLOR_XYZ_INACTIVE); }
+                if (ev.state.stateChanged) { TFTPrint(5, ev.state.machineState, TFT_COLOR_STA_NRM); }
+                if (ev.state.messageChanged) { TFTPrint(6, ev.state.message, TFT_COLOR_MSG_NRM);}
+                break;
+
+            case DISP_MENU_PREPARE:
+                TFTMenuPrepare();
+                break;
+
+            case DISP_MENU_NAV_UPDATE:
+                TFTMenuPrint(0, ev.nav.title, TFT_COLOR_CNF_STD);
+                for (uint8_t i = 0; i < ev.nav.itemCount; i++)
+                {
+                    if (i == ev.nav.activeIndex)
+                    {
+                        char buf[27];
+                        sprintf(buf, "> %s", ev.nav.items[i]);
+                        TFTMenuPrint(i + 1, buf, TFT_COLOR_CNF_HIL);
+                    }
+                    else
+                    {
+                        char buf[27];
+                        sprintf(buf, "  %s", ev.nav.items[i]);
+                        TFTMenuPrint(i + 1, buf, TFT_COLOR_CNF_STD);
+                    }
+                }
+                break;
+                
+            case DISP_MENU_ADDRESS_UPDATE:
+
+                TFTMenuPrint(0, ev.bleaddress.title, TFT_COLOR_CNF_STD);
+                TFTMenuPrint(2, "", TFT_COLOR_CNF_STD);
+                TFTMenuPrintAddress(2, ev.bleaddress.left, ev.bleaddress.mid, ev.bleaddress.right, TFT_COLOR_CNF_STD, TFT_COLOR_CNF_HIL);
+                break;
+
+            case DISP_MENU_LINE_UPDATE:
+
+                TFTMenuPrint(0, ev.line.title, TFT_COLOR_CNF_STD);
+                char printValue[DISP_MAX_MENU_TEXT];
+                strncpy(printValue, ev.line.printLine, DISP_MAX_MENU_TEXT);
+
+                TFTMenuPrint(ev.line.line, printValue, TFT_COLOR_CNF_HIL);
+                break;
+
+            case DISP_SLEEP:
+
+                TFTSleep();
+                break;
+            }
         }
-        if (wychange || axischange) {
-                char strwy[7];
-                dtostrf(wy,7,2,strwy);
-                if (activeAxis == 1) { TFTPrint(YField, "> Y: " + String(strwy), TFT_COLOR_XYZ); tft.drawRect(Fields[YField][0],Fields[YField][1],Fields[YField][2],Fields[YField][3],TFT_COLOR_FRM_LIN); }
-                else { TFTPrint(YField, "  Y: " + String(strwy), TFT_COLOR_XYZ_INACTIVE); }
-                wychange = false;
-        }
-        if (wzchange || axischange) {
-                char strwz[7];
-                dtostrf(wz,7,2,strwz);
-                if (activeAxis == 2) { TFTPrint(ZField, "> Z: " + String(strwz), TFT_COLOR_XYZ); tft.drawRect(Fields[ZField][0],Fields[ZField][1],Fields[ZField][2],Fields[ZField][3],TFT_COLOR_FRM_LIN); }
-                else { TFTPrint(ZField, "  Z: " + String(strwz), TFT_COLOR_XYZ_INACTIVE); }
-                wzchange = false;
-        }
-        if (wachange || axischange) {
-                char strwa[7];
-                dtostrf(wa,7,2,strwa);
-                if (activeAxis == 3) { TFTPrint(AField, "> A: " + String(strwa), TFT_COLOR_XYZ); tft.drawRect(Fields[AField][0],Fields[AField][1],Fields[AField][2],Fields[AField][3],TFT_COLOR_FRM_LIN); }
-                else { TFTPrint(AField, "  A: " + String(strwa), TFT_COLOR_XYZ_INACTIVE); }
-                wachange = false;
-                axischange = false;
-        }
-        if (factorchange) {
-                TFTPrint(FField, "  F:    " + strFactor[activeFactor], TFT_COLOR_XYZ_INACTIVE);
-                factorchange = false;
-        }
-        if (statechange) {
-                if (state == "Run") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
-                else if (state == "Jog") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
-                else if (state == "Idle") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
-                else if (state == "Hold") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
-                else if (state == "Home") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
-                else if (state == "Door") { TFTPrint(StateField, state, TFT_COLOR_STA_ERR); }
-                else if (state == "Check") { TFTPrint(StateField, state, TFT_COLOR_STA_ERR); }
-                else if (state == "Sleep") { TFTPrint(StateField, state, TFT_COLOR_STA_NRM); }
-                else if (state == "Tool") { TFTPrint(StateField, state, TFT_COLOR_STA_ERR); }
-                else if (state == "Alarm") { TFTPrint(StateField, state, TFT_COLOR_STA_ERR); }
-                else if (state == "Endstop") { TFTPrint(StateField, state, TFT_COLOR_STA_ERR); }
-                else { TFTPrint(StateField, state, TFT_COLOR_STA_ERR); }
-                statechange = false;
-        }
-}
 
-
-
-void TFTSleep() {
-/*
-        SleepTicker.stop();
-        KeypadTicker.stop();
-        EncoderTicker.stop();
-        BlinkTicker.stop();
-        MessageTicker.stop();
-        TftTicker.stop();
-
-        debug("SLEEP");
-        
-        // Turn off TFT
-        analogWrite(TFT_LED, 0);
-        tft.fillRect(0,0,240,320, ILI9341_WHITE);
-        bluetoothDisconnect();
-
-        // adc_power_off();
-
-        // wait a moment for connections to close...
-        delay(200);
-
-        bitSet64(SleepPinMask, ENCODER_PIN_A);
-        bitSet64(SleepPinMask, ENCODER_PIN_B);
-        bitSet64(SleepPinMask, BUTTON_0_PIN);
-        bitSet64(SleepPinMask, BUTTON_1_PIN);
-        bitSet64(SleepPinMask, BUTTON_2_PIN);
-        bitSet64(SleepPinMask, BUTTON_3_PIN);
-        bitSet64(SleepPinMask, BUTTON_4_PIN);
-        bitSet64(SleepPinMask, BUTTON_5_PIN);
-        bitSet64(SleepPinMask, BUTTON_6_PIN);
-        bitSet64(SleepPinMask, BUTTON_7_PIN);
-        bitSet64(SleepPinMask, BUTTON_8_PIN);
-        bitSet64(SleepPinMask, BUTTON_9_PIN);
-        bitSet64(SleepPinMask, BUTTON_10_PIN);
-        bitSet64(SleepPinMask, BUTTON_11_PIN);
-
-        esp_sleep_enable_ext1_wakeup(SleepPinMask, ESP_EXT1_WAKEUP_ANY_HIGH);
-        // GoTo Sleep
-        esp_light_sleep_start();
-
-        // WakeUp Routine:
-        delay(200);
-
-        // adc_power_on();
-
-        wxchange = true; wychange = true; wzchange = true; wachange = true; statechange = true;
-        encoderValue = 0;
-
-        bluetoothInit();
-        bluetoothConnect();
-
-        analogWrite(TFT_LED, TFT_BRIGHTNESS);
-        TFTPrepare();
-
-        if (SleepTime > 0) {SleepTicker.start();}
-
-        KeypadTicker.start();
-        EncoderTicker.start();
-        // BlinkTicker.start();
-        // MessageTicker.start();
-        // TftTicker.start();
-
-        debug("WAKE UP");
-*/
-}
-
-
-void TFTPrint(const byte Aim, String Content, const int Color) {
-        Content = Content.substring(0,20);
-        tft.fillRect(Fields[Aim][0],Fields[Aim][1],Fields[Aim][2],Fields[Aim][3], TFT_COLOR_FRM_BGR);
-        TFTSetFontSize(Fields[Aim][4]);
-        tft.setTextColor(Color, TFT_COLOR_FRM_BGR);
-        tft.setCursor(Fields[Aim][0]+7, Fields[Aim][1]+6);
-        tft.print(Content);
-        if (Aim == MessageField) { MessageTicker.start(); }
-}
-
-
-void TFTSetFontSize(const int size) {
-        if (size == 2) {
-                tft.unloadFont();
-                tft.loadFont(TFT_FONT_SMALL);
-        }
-        else if (size == 3) {
-                tft.unloadFont();
-                tft.loadFont(TFT_FONT_LARGE);
-        }
-}
-
-
-void TFTPrepare() {
-
-        tft.fillRect(0,0,240,320,TFT_COLOR_BGR);
-        for (int i = 0; i <= 6; i++) {
-                tft.drawRect(Fields[i][0]-1,Fields[i][1]-1,Fields[i][2]+2,Fields[i][3]+2,TFT_COLOR_FRM_LIN);
-        }
-        tft.drawFastHLine(Line[0],Line[1],Line[2],TFT_COLOR_FRM_LIN);
-        TFTClear();
-}
-
-
-void TFTClear() {
-        for (int i = 0; i <= 6; i++) {
-                tft.fillRect(Fields[i][0],Fields[i][1],Fields[i][2],Fields[i][3],TFT_COLOR_FRM_BGR);
-        }
-        wxchange = true; wychange = true; wzchange = true; wachange = true; factorchange = true; statechange = true;
-}
-
-
-void TFTMessage() {
-        tft.fillRect(Fields[MessageField][0],Fields[MessageField][1],Fields[MessageField][2],Fields[MessageField][3], TFT_COLOR_FRM_BGR);
-        MessageTicker.stop();
-}
-
-
-void TFTBlink() {
-        blinker = !blinker;
-        blinker_change = true;
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+    }
 }
